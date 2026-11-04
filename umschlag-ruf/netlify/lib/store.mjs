@@ -68,15 +68,17 @@ export function applyScan(state, info, action) {
     state.orders[info.code] = {
       code: info.code, nr: info.nr ?? null, name: info.name || "", total: info.total,
       inCount: info.inCount, status: "offen", firstAt: now, lastAt: now, note: info.note || "",
+      present: info.present || [],
     };
   } else {
     Object.assign(o, {
       nr: info.nr ?? o.nr, name: info.name || o.name, total: info.total ?? o.total,
       inCount: info.inCount, lastAt: now, note: info.note || "",
+      present: info.present || o.present || [],
     });
     if (info.inCount <= 0 && o.status === "offen") delete state.orders[info.code];
   }
-  state.feed.unshift({ t: now, code: info.code, nr: info.nr ?? null, name: info.name || "", action, inCount: info.inCount, total: info.total });
+  state.feed.unshift({ t: now, code: info.code, nr: info.nr ?? null, name: info.name || "", scanned: info.scanned || "", action, inCount: info.inCount, total: info.total });
   state.feed = state.feed.slice(0, 60);
   return state;
 }

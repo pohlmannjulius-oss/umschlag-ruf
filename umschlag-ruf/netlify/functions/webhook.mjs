@@ -11,7 +11,7 @@ export async function fetchOrder(org, event, code) {
   return res.json();
 }
 
-export function summarize(order) {
+export function summarize(order, positionId) {
   const listId = process.env.CHECKIN_LIST_ID ? Number(process.env.CHECKIN_LIST_ID) : null;
   const tickets = (order.positions || []).filter((p) => !p.addon_to && !p.canceled);
   const isIn = (p) => (p.checkins || []).some((c) => (c.type || "entry") === "entry" && (!listId || c.list === listId));
@@ -19,7 +19,9 @@ export function summarize(order) {
     order.invoice_address?.name ||
     tickets.find((p) => p.attendee_name)?.attendee_name ||
     order.email || "";
-  return { total: tickets.length, inCount: tickets.filter(isIn).length, name };
+  const scanned = tickets.find((p) => p.id === Number(positionId))?.attendee_name || "";
+  const present = tickets.filter(isIn).map((p) => p.attendee_name).filter(Boolean);
+  return { total: tickets.length, inCount: tickets.filter(isIn).length, name, scanned, present };
 }
 
 export default async (req) => {
@@ -36,8 +38,8 @@ export default async (req) => {
 
   let info;
   try {
-    const s = summarize(await fetchOrder(body.organizer, body.event, code));
-    info = { code, nr: m.nr, name: m.name || s.name, total: s.total, inCount: s.inCount };
+    const s = summarize(await fetchOrder(body.organizer, body.event, code), body.orderposition_id ?? body.position);
+    info = { code, nr: m.nr, name: m.name || s.name, total: s.total, inCount: s.inCount, scanned: s.scanned, present: s.present };
   } catch (e) {
     // pretix nicht erreichbar: trotzdem anzeigen, damit niemand übersehen wird
     const isRevert = body.action.endsWith("reverted");

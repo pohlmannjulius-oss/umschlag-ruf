@@ -225,6 +225,7 @@ function render(){
       ${nrHtml(top, "nr")}
       ${top.nr == null || top.nr === "" ? `<div class="pill warn" style="align-self:flex-start;font-size:18px">Keine Nummer in der Liste – nach Bestellnummer suchen</div>` : ""}
       <div class="name">${esc(top.name || "—")}</div>
+      ${top.present?.length ? `<div style="font-size:19px;color:var(--slate);margin-top:6px">Da: <b style="color:var(--ink)">${esc(top.present.join(", "))}</b></div>` : ""}
       <div class="meta">
         <span class="pill code">${esc(top.code)}</span>
         <span class="pill">${esc(countTxt(top))}</span>
@@ -239,14 +240,14 @@ function render(){
   $("queue").innerHTML = rest.length ? rest.map(o => `
     <div class="row ${seen && !seen.has(o.code) ? "new" : ""}">
       ${nrHtml(o, "n")}
-      <div><div class="who">${esc(o.name || "—")}</div><div class="sub">${esc(o.code)} · ${esc(countTxt(o))} · ${time(o.firstAt)}</div></div>
+      <div><div class="who">${esc(o.name || "—")}</div><div class="sub">${esc(o.code)} · ${esc(countTxt(o))}${o.present?.length ? " · da: " + esc(o.present.join(", ")) : ""} · ${time(o.firstAt)}</div></div>
       <button data-done="${esc(o.code)}">Ausgegeben</button>
     </div>`).join("") : `<div class="none">Keine weiteren offenen Umschläge.</div>`;
 
   $("feed").innerHTML = state.feed?.length ? state.feed.slice(0, 25).map(f => `
     <div class="row">
       ${nrHtml(f, "n")}
-      <div><div class="who" style="font-size:16px">${esc(f.name || f.code)}</div><div class="sub">${esc(f.code)} · ${f.action === "zurück" ? "Check-in zurückgenommen" : f.action === "test" ? "Testscan" : "eingecheckt"} · ${esc(f.total ? f.inCount + "/" + f.total : "")}</div></div>
+      <div><div class="who" style="font-size:16px">${esc(f.scanned || f.name || f.code)}${f.scanned && f.name && f.scanned !== f.name ? ` <span class="sub">· Bestellung ${esc(f.name)}</span>` : ""}</div><div class="sub">${esc(f.code)} · ${f.action === "zurück" ? "Check-in zurückgenommen" : f.action === "test" ? "Testscan" : "eingecheckt"} · ${esc(f.total ? f.inCount + "/" + f.total : "")}</div></div>
       <div class="t">${time(f.t)}</div>
     </div>`).join("") : `<div class="none">Noch keine Scans.</div>`;
 
