@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Umschlag-Ruf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --blue:#3B43A6; --red:#C0372C; --ink:#0A1620; --slate:#55666F; --line:#DCE5EA;
+    --bg:#F4F7F9; --card:#FFFFFF; --ok:#1F7A4D;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:Archivo,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  button{font:inherit;cursor:pointer;border:0;border-radius:12px}
+  input,select{font:inherit}
+
+  header{display:flex;align-items:center;gap:16px;padding:14px 24px;background:var(--blue);color:#fff}
+  header h1{font-size:20px;font-weight:700;margin:0;font-stretch:115%;letter-spacing:.2px}
+  .status{display:flex;align-items:center;gap:8px;font-size:15px;opacity:.95}
+  .dot{width:10px;height:10px;border-radius:50%;background:#7CF0A9;box-shadow:0 0 0 4px rgba(124,240,169,.25)}
+  .dot.off{background:#FFB3AB;box-shadow:0 0 0 4px rgba(255,179,171,.25)}
+  .counts{margin-left:auto;display:flex;gap:18px;font-size:15px}
+  .counts b{font-size:20px}
+  .hbtn{background:rgba(255,255,255,.14);color:#fff;padding:10px 14px;font-size:15px}
+  .hbtn.on{background:#fff;color:var(--blue)}
+
+  main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;padding:20px 24px;height:calc(100% - 64px)}
+  @media (max-width:900px){main{grid-template-columns:1fr;height:auto}}
+
+  .hero{background:var(--card);border-radius:20px;border:1px solid var(--line);padding:28px 32px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .hero .label{font-size:18px;color:var(--slate);font-weight:600}
+  .hero .nr{font-size:clamp(120px,19vw,240px);line-height:.9;font-weight:800;font-stretch:80%;color:var(--blue);margin:8px 0 4px}
+  .hero .nr.unknown{color:var(--red);font-size:clamp(70px,10vw,120px)}
+  .hero .name{font-size:clamp(28px,3.4vw,42px);font-weight:700;margin-top:6px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;font-size:20px;color:var(--slate)}
+  .pill{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+  .pill.code{font-weight:700;color:var(--ink);letter-spacing:1px}
+  .pill.warn{background:#FCECEA;border-color:#F3C4BE;color:var(--red)}
+  .hero .actions{margin-top:auto;display:flex;gap:12px;padding-top:24px}
+  .big{background:var(--red);color:#fff;font-size:24px;font-weight:700;padding:22px 30px;flex:1}
+  .big:active{transform:scale(.99)}
+  .empty{margin:auto;text-align:center;color:var(--slate);font-size:22px;line-height:1.5}
+  .empty strong{display:block;color:var(--ink);font-size:30px;margin-bottom:6px}
+  .hero.flash{animation:flash 1.2s ease-out}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(192,55,44,.6);border-color:var(--red)}100%{box-shadow:0 0 0 24px rgba(192,55,44,0);border-color:var(--line)}}
+
+  .side{display:flex;flex-direction:column;gap:20px;min-height:0}
+  .panel{background:var(--card);border-radius:20px;border:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .panel h2{font-size:17px;margin:0;padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+  .panel h2 span{color:var(--slate);font-weight:500}
+  .queue{flex:1;overflow:auto}
+  .row{display:grid;grid-template-columns:88px 1fr auto;gap:14px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .n{font-size:40px;font-weight:800;font-stretch:80%;color:var(--blue);text-align:center}
+  .row .n.q{color:var(--red);font-size:30px}
+  .row .who{font-size:18px;font-weight:600;line-height:1.25}
+  .row .sub{font-size:15px;color:var(--slate);font-weight:400}
+  .row button{background:var(--bg);border:1px solid var(--line);padding:12px 16px;font-size:16px;font-weight:600;color:var(--ink)}
+  .row.new{animation:rowin .6s ease-out}
+  @keyframes rowin{from{background:#FCECEA}to{background:transparent}}
+  .ticker{max-height:34%;}
+  .ticker .queue .row{grid-template-columns:70px 1fr auto;padding:8px 20px}
+  .ticker .row .n{font-size:26px}
+  .ticker .t{font-size:14px;color:var(--slate)}
+  .none{padding:20px;color:var(--slate)}
+
+  /* Einstellungen */
+  dialog{border:0;border-radius:20px;padding:0;width:min(760px,94vw);max-height:90vh;color:var(--ink)}
+  dialog::backdrop{background:rgba(10,22,32,.45)}
+  .dlg{padding:24px 28px;overflow:auto;max-height:90vh}
+  .dlg h3{margin:24px 0 8px;font-size:19px}
+  .dlg h3:first-child{margin-top:0}
+  .dlg p{margin:6px 0;color:var(--slate);line-height:1.45}
+  .field{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .field label{font-size:15px;color:var(--slate);min-width:120px}
+  .field select,.field input[type=text],.field input[type=password]{padding:10px 12px;border:1px solid var(--line);border-radius:10px;min-width:200px;font-size:16px}
+  .btn{background:var(--blue);color:#fff;padding:11px 18px;font-weight:600}
+  .btn.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+  .btn.danger{background:#fff;color:var(--red);border:1px solid #F3C4BE}
+  table{border-collapse:collapse;width:100%;font-size:15px;margin-top:8px}
+  td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+  .msg{margin-top:8px;font-weight:600}
+  .msg.ok{color:var(--ok)} .msg.err{color:var(--red)}
+  .close{float:right}
+
+  /* PIN */
+  .pin{position:fixed;inset:0;background:var(--blue);display:none;align-items:center;justify-content:center;z-index:10}
+  .pin.show{display:flex}
+  .pin form{background:#fff;border-radius:20px;padding:32px;width:min(380px,90vw);text-align:center}
+  .pin input{width:100%;font-size:28px;text-align:center;padding:12px;border:1px solid var(--line);border-radius:12px;margin:16px 0;letter-spacing:6px}
+</style>
+</head>
+<body>
+<div class="pin" id="pin">
+  <form id="pinForm">
+    <h2 style="margin:0">Umschlag-Ruf</h2>
+    <p style="color:var(--slate)">Bitte PIN eingeben</p>
+    <input id="pinInput" type="password" inputmode="numeric" autocomplete="off">
+    <button class="btn" style="width:100%;padding:14px">Weiter</button>
+    <p id="pinErr" class="msg err"></p>
+  </form>
+</div>
+
+<header>
+  <h1>Umschlag-Ruf</h1>
+  <div class="status"><span class="dot off" id="dot"></span><span id="statusText">verbinde …</span></div>
+  <div class="counts">
+    <div><b id="cOpen">0</b> offen</div>
+    <div><b id="cDone">0</b> ausgegeben</div>
+  </div>
+  <button class="hbtn" id="soundBtn">Ton aus</button>
+  <button class="hbtn" id="settingsBtn">Einstellungen</button>
+</header>
+
+<main>
+  <section class="hero" id="hero"></section>
+  <div class="side">
+    <div class="panel" style="flex:1">
+      <h2>Warteschlange <span id="qInfo"></span></h2>
+      <div class="queue" id="queue"></div>
+    </div>
+    <div class="panel ticker">
+      <h2>Live-Ticker <span>letzte Scans</span></h2>
+      <div class="queue" id="feed"></div>
+    </div>
+  </div>
+</main>
+
+<dialog id="dlg">
+  <div class="dlg">
+    <button class="btn ghost close" id="closeDlg">Schließen</button>
+    <h3>1. Nummernliste hochladen</h3>
+    <p>Excel- oder CSV-Datei mit laufender Nummer und Bestellnummer. Die Spalten werden automatisch erkannt, du kannst sie unten korrigieren.</p>
+    <div class="field"><input type="file" id="file" accept=".xlsx,.xls,.csv"></div>
+    <div id="mapUi" hidden>
+      <div class="field"><label>Laufende Nr.</label><select id="colNr"></select></div>
+      <div class="field"><label>Bestellnummer</label><select id="colCode"></select></div>
+      <div class="field"><label>Name</label><select id="colName"></select></div>
+      <div class="field"><label>Anzahl Tickets</label><select id="colTickets"></select></div>
+      <div id="preview"></div>
+      <div class="field"><button class="btn" id="saveMap">Liste speichern</button></div>
+    </div>
+    <p class="msg" id="mapMsg"></p>
+    <p id="mapState"></p>
+
+    <h3>2. Testscan</h3>
+    <p>Simuliert einen Check-in ohne pretix. Jeder Klick zählt eine Person der Bestellung hinzu.</p>
+    <div class="field"><input type="text" id="testCode" placeholder="Bestellnummer, z. B. A7K2Q" autocapitalize="characters"><button class="btn" id="testBtn">Testscan</button></div>
+    <p class="msg" id="testMsg"></p>
+
+    <h3>3. Bereits ausgegeben</h3>
+    <p>Falls versehentlich abgehakt: hier zurückholen.</p>
+    <div id="doneList"></div>
+
+    <h3>Zurücksetzen</h3>
+    <p>Leert Warteschlange und Ticker (z. B. nach dem Testen). Die Nummernliste bleibt erhalten.</p>
+    <div class="field"><button class="btn danger" id="resetBtn">Alles zurücksetzen</button></div>
+  </div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const ls = { get(k){ try{return localStorage.getItem(k)}catch{return null} }, set(k,v){ try{localStorage.setItem(k,v)}catch{} } };
+
+let pin = ls.get("ur_pin") || "";
+let state = { orders:{}, feed:[] };
+let seen = null;            // bekannte offene Codes (für Ton/Flash)
+let lastOk = 0;
+let sound = ls.get("ur_sound") === "1";
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { ...opts, headers: { "content-type":"application/json", "x-pin": pin, ...(opts.headers||{}) } });
+  if (res.status === 401) { showPin(); throw new Error("pin"); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.status);
+  return data;
+}
+
+function showPin(err){ $("pin").classList.add("show"); $("pinErr").textContent = err || (pin ? "PIN falsch" : ""); setTimeout(()=>$("pinInput").focus(),50); }
+$("pinForm").onsubmit = (e) => { e.preventDefault(); pin = $("pinInput").value.trim(); ls.set("ur_pin", pin); $("pin").classList.remove("show"); poll(); };
+
+// ---------- Ton ----------
+let ac;
+function beep(){
+  if (!sound) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    [0, .18].forEach((d, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.value = i ? 1175 : 880; o.type = "sine";
+      g.gain.setValueAtTime(.0001, ac.currentTime + d);
+      g.gain.exponentialRampToValueAtTime(.4, ac.currentTime + d + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d + .16);
+      o.connect(g).connect(ac.destination); o.start(ac.currentTime + d); o.stop(ac.currentTime + d + .2);
+    });
+  } catch {}
+}
+function renderSound(){ $("soundBtn").textContent = sound ? "Ton an" : "Ton aus"; $("soundBtn").classList.toggle("on", sound); }
+$("soundBtn").onclick = () => { sound = !sound; ls.set("ur_sound", sound ? "1" : "0"); renderSound(); if (sound) beep(); };
+renderSound();
+
+// ---------- Darstellung ----------
+const time = (iso) => iso ? new Date(iso).toLocaleTimeString("de-DE", { hour:"2-digit", minute:"2-digit", second:"2-digit" }) : "";
+const nrHtml = (o, cls) => o.nr != null && o.nr !== "" ? `<div class="${cls}">${esc(o.nr)}</div>` : `<div class="${cls} ${cls==='nr'?'unknown':'q'}">?</div>`;
+const countTxt = (o) => o.total ? `${o.inCount} von ${o.total} da` : `${o.inCount} eingecheckt`;
+
+function render(){
+  const all = Object.values(state.orders);
+  const open = all.filter(o => o.status === "offen").sort((a,b) => a.firstAt < b.firstAt ? 1 : -1); // neueste zuerst
+  const done = all.filter(o => o.status === "ausgegeben").sort((a,b) => (a.doneAt||"") < (b.doneAt||"") ? 1 : -1);
+  $("cOpen").textContent = open.length; $("cDone").textContent = done.length;
+
+  const top = open[0];
+  if (!top) {
+    $("hero").innerHTML = `<div class="empty"><strong>Alles erledigt</strong>Sobald jemand eingecheckt wird, erscheint hier die Umschlagnummer.</div>`;
+  } else {
+    $("hero").innerHTML = `
+      <div class="label">Umschlag holen</div>
+      ${nrHtml(top, "nr")}
+      ${top.nr == null || top.nr === "" ? `<div class="pill warn" style="align-self:flex-start;font-size:18px">Keine Nummer in der Liste – nach Bestellnummer suchen</div>` : ""}
+      <div class="name">${esc(top.name || "—")}</div>
+      <div class="meta">
+        <span class="pill code">${esc(top.code)}</span>
+        <span class="pill">${esc(countTxt(top))}</span>
+        <span class="pill">seit ${time(top.firstAt)}</span>
+        ${top.note ? `<span class="pill warn">${esc(top.note)}</span>` : ""}
+      </div>
+      <div class="actions"><button class="big" data-done="${esc(top.code)}">Umschlag ${esc(top.nr ?? top.code)} ausgegeben</button></div>`;
+  }
+
+  const rest = open.slice(1);
+  $("qInfo").textContent = rest.length ? `${rest.length} weitere` : "";
+  $("queue").innerHTML = rest.length ? rest.map(o => `
+    <div class="row ${seen && !seen.has(o.code) ? "new" : ""}">
+      ${nrHtml(o, "n")}
+      <div><div class="who">${esc(o.name || "—")}</div><div class="sub">${esc(o.code)} · ${esc(countTxt(o))} · ${time(o.firstAt)}</div></div>
+      <button data-done="${esc(o.code)}">Ausgegeben</button>
+    </div>`).join("") : `<div class="none">Keine weiteren offenen Umschläge.</div>`;
+
+  $("feed").innerHTML = state.feed?.length ? state.feed.slice(0, 25).map(f => `
+    <div class="row">
+      ${nrHtml(f, "n")}
+      <div><div class="who" style="font-size:16px">${esc(f.name || f.code)}</div><div class="sub">${esc(f.code)} · ${f.action === "zurück" ? "Check-in zurückgenommen" : f.action === "test" ? "Testscan" : "eingecheckt"} · ${esc(f.total ? f.inCount + "/" + f.total : "")}</div></div>
+      <div class="t">${time(f.t)}</div>
+    </div>`).join("") : `<div class="none">Noch keine Scans.</div>`;
+
+  $("doneList").innerHTML = done.length ? `<table><tr><th>Nr.</th><th>Name</th><th>Bestellung</th><th>um</th><th></th></tr>${done.map(o => `
+    <tr><td><b>${esc(o.nr ?? "?")}</b></td><td>${esc(o.name)}</td><td>${esc(o.code)}</td><td>${time(o.doneAt)}</td><td><button class="btn ghost" data-undo="${esc(o.code)}">Zurückholen</button></td></tr>`).join("")}</table>` : `<p>Noch nichts ausgegeben.</p>`;
+
+  const ms = state.mappingCount ? `Gespeichert: <b>${state.mappingCount} Bestellungen</b> (Stand ${new Date(state.mappingAt).toLocaleString("de-DE")})` : `<b style="color:var(--red)">Noch keine Nummernliste hochgeladen.</b>`;
+  $("mapState").innerHTML = ms;
+}
+
+document.addEventListener("click", async (e) => {
+  const d = e.target.closest("[data-done]"), u = e.target.closest("[data-undo]");
+  if (!d && !u) return;
+  const code = (d || u).dataset[d ? "done" : "undo"];
+  const o = state.orders[code]; if (o) { o.status = d ? "ausgegeben" : "offen"; o.doneAt = d ? new Date().toISOString() : null; render(); }
+  try { await api("/api/state", { method:"POST", body: JSON.stringify({ action: d ? "done" : "undo", code }) }); } catch {}
+  poll();
+});
+
+// ---------- Abfrage alle 1,5 s ----------
+let busy = false;
+async function poll(){
+  if (busy) return; busy = true;
+  try {
+    const data = await api("/api/state");
+    state = data; lastOk = Date.now();
+    const openCodes = new Set(Object.values(state.orders).filter(o => o.status === "offen").map(o => o.code));
+    const fresh = seen ? [...openCodes].filter(c => !seen.has(c)) : [];
+    render();
+    if (fresh.length) { beep(); const h = $("hero"); h.classList.remove("flash"); void h.offsetWidth; h.classList.add("flash"); }
+    seen = openCodes;
+  } catch (e) {} finally { busy = false; tick(); }
+}
+function tick(){
+  const age = lastOk ? Math.round((Date.now() - lastOk) / 1000) : null;
+  const ok = age !== null && age < 8;
+  $("dot").classList.toggle("off", !ok);
+  $("statusText").textContent = ok ? "Live" : age === null ? "verbinde …" : `keine Verbindung seit ${age} s`;
+}
+setInterval(poll, 1500); setInterval(tick, 1000); poll();
+
+// ---------- Einstellungen ----------
+$("settingsBtn").onclick = () => $("dlg").showModal();
+$("closeDlg").onclick = () => $("dlg").close();
+
+let sheet = null; // { header:[], rows:[[]] }
+const codeRe = /^[A-Z0-9]{5,6}$/;
+
+function guess(header, rows){
+  const n = header.length, score = (fn) => header.map((h,i) => fn(String(h||"").toLowerCase(), rows.map(r => r[i]).filter(v => v !== "" && v != null)));
+  const best = (arr) => { let m = -1, mi = -1; arr.forEach((v,i) => { if (v > m) { m = v; mi = i; } }); return m > 0 ? mi : -1; };
+  const code = best(score((h, vals) => (/(bestell|order|code)/.test(h) ? 2 : 0) + (vals.length ? vals.filter(v => codeRe.test(String(v).trim().toUpperCase()) && /[A-Z]/i.test(String(v))).length / vals.length * 3 : 0)));
+  const nr = best(score((h, vals) => {
+    if (header.indexOf(h) === code) return 0;
+    const ints = vals.filter(v => /^\d{1,4}$/.test(String(v).trim())).length / (vals.length || 1);
+    return (/^(nr|nr\.|nummer|lfd|laufende|umschlag|#|no|pos)/.test(h) ? 3 : 0) + (/(bestell|order|telefon|plz|preis|betrag)/.test(h) ? -5 : 0) + ints;
+  }));
+  const name = best(score((h) => (/name/.test(h) ? (/(vor|nach)/.test(h) ? 1 : 3) : 0) + (/(besteller|kunde|teilnehmer)/.test(h) ? 1 : 0)));
+  const tickets = best(score((h) => /(anzahl|tickets|menge|positionen|personen)/.test(h) ? 2 : 0));
+  return { nr, code, name, tickets };
+}
+
+$("file").onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  $("mapMsg").textContent = ""; $("mapMsg").className = "msg";
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type:"array" });
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:"", raw:false });
+    const hi = aoa.findIndex(r => r.filter(c => String(c).trim()).length >= 2);
+    if (hi < 0) throw new Error("Keine Tabelle gefunden");
+    sheet = { header: aoa[hi].map((h,i) => String(h).trim() || `Spalte ${i+1}`), rows: aoa.slice(hi+1).filter(r => r.some(c => String(c).trim())) };
+    const g = guess(sheet.header, sheet.rows);
+    for (const [id, key, optional] of [["colNr","nr",false],["colCode","code",false],["colName","name",true],["colTickets","tickets",true]]) {
+      $(id).innerHTML = (optional ? `<option value="-1">— keine —</option>` : "") + sheet.header.map((h,i) => `<option value="${i}">${esc(h)}</option>`).join("");
+      $(id).value = String(g[key] >= 0 ? g[key] : (optional ? -1 : 0));
+      $(id).onchange = preview;
+    }
+    $("mapUi").hidden = false; preview();
+  } catch (err) { $("mapMsg").textContent = "Datei konnte nicht gelesen werden: " + err.message; $("mapMsg").className = "msg err"; }
+};
+
+function buildRows(){
+  const c = { nr:+$("colNr").value, code:+$("colCode").value, name:+$("colName").value, tickets:+$("colTickets").value };
+  const map = new Map();
+  for (const r of sheet.rows) {
+    const code = String(r[c.code] ?? "").trim().toUpperCase(); if (!code) continue;
+    if (map.has(code)) { const x = map.get(code); x._rows++; if (!x.nr && r[c.nr]) x.nr = String(r[c.nr]).trim(); continue; }
+    map.set(code, { code, nr: String(r[c.nr] ?? "").trim() || null, name: c.name >= 0 ? String(r[c.name] ?? "").trim() : "", tickets: c.tickets >= 0 ? parseInt(r[c.tickets]) || null : null, _rows: 1 });
+  }
+  return [...map.values()].map(x => ({ ...x, tickets: x.tickets || x._rows }));
+}
+function preview(){
+  const rows = buildRows();
+  const noNr = rows.filter(r => !r.nr).length;
+  $("preview").innerHTML = `<p><b>${rows.length} Bestellungen</b> erkannt${noNr ? `, <span style="color:var(--red)">${noNr} ohne Nummer</span>` : ""}. Vorschau:</p>
+    <table><tr><th>Nr.</th><th>Bestellnummer</th><th>Name</th><th>Tickets</th></tr>${rows.slice(0,6).map(r => `<tr><td>${esc(r.nr)}</td><td>${esc(r.code)}</td><td>${esc(r.name)}</td><td>${r.tickets}</td></tr>`).join("")}</table>`;
+}
+$("saveMap").onclick = async () => {
+  try {
+    const rows = buildRows().map(({ _rows, ...r }) => r);
+    const res = await api("/api/mapping", { method:"PUT", body: JSON.stringify({ rows }) });
+    $("mapMsg").textContent = `Gespeichert: ${res.count} Bestellungen.`; $("mapMsg").className = "msg ok"; poll();
+  } catch (err) { $("mapMsg").textContent = "Fehler: " + err.message; $("mapMsg").className = "msg err"; }
+};
+$("testBtn").onclick = async () => {
+  const code = $("testCode").value.trim(); if (!code) return;
+  try {
+    const r = await api("/api/state", { method:"POST", body: JSON.stringify({ action:"test", code }) });
+    $("testMsg").textContent = r.found ? "Testscan ausgelöst." : "Testscan ausgelöst – Bestellnummer steht aber nicht in der Liste."; $("testMsg").className = r.found ? "msg ok" : "msg err"; poll();
+  } catch (err) { $("testMsg").textContent = "Fehler: " + err.message; $("testMsg").className = "msg err"; }
+};
+$("resetBtn").onclick = async () => {
+  if (!confirm("Warteschlange und Ticker wirklich leeren?")) return;
+  await api("/api/state", { method:"POST", body: JSON.stringify({ action:"reset" }) }).catch(()=>{}); seen = null; poll();
+};
+</script>
+</body>
+</html>
