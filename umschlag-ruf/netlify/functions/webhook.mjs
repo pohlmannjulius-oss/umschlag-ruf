@@ -25,8 +25,10 @@ export function summarize(order, positionId) {
 }
 
 export default async (req) => {
-  const key = new URL(req.url).searchParams.get("key");
-  if (!process.env.WEBHOOK_KEY || key !== process.env.WEBHOOK_KEY) return json({ error: "unauthorized" }, 401);
+  const key = (new URL(req.url).searchParams.get("key") || "").trim();
+  const expected = (process.env.WEBHOOK_KEY || "").trim();
+  if (!expected) { console.log("WEBHOOK_KEY ist in Netlify nicht gesetzt"); return json({ error: "WEBHOOK_KEY fehlt" }, 401); }
+  if (key !== expected) { console.log(`Key passt nicht (erwartet ${expected.length} Zeichen, bekommen ${key.length})`); return json({ error: "unauthorized" }, 401); }
 
   let body;
   try { body = await req.json(); } catch { return json({ ok: true, ignored: "kein JSON" }); }
