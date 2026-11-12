@@ -51,16 +51,18 @@
   text-align:center;box-shadow:0 .8cqw 1.6cqw rgba(0,0,0,.35);transform-origin:50% 100%}
 .stage .sign small{display:block;font-size:1.25cqw;font-weight:700;color:#fff;background:#3B43A6;border-radius:.4cqw;padding:.2cqw .6cqw;margin:0 auto .5cqw;width:max-content}
 .stage .sign b{display:block;color:#0A1620;font-weight:800;font-stretch:115%;line-height:1.05;white-space:nowrap}
-.stage .sledsolo{position:absolute;left:0;top:0;width:24cqw;transform-origin:50% 100%;will-change:transform,filter}
-.stage .sledsolo svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 1cqw 1.4cqw rgba(0,0,0,.4))}
-.stage .ramp{position:absolute;left:50%;bottom:-2cqw;width:40cqw;height:9cqw;transform:translateX(-50%);border-radius:50% 50% 0 0/100% 100% 0 0;
-  background:linear-gradient(180deg,#F4F8FF 0%,#CFDBEA 100%);opacity:.9}
+.stage .piste-svg{position:absolute;inset:0;width:100%;height:100%}
+.stage .rider.cheer{width:22cqw}
 .stage .under{position:absolute;left:50%;top:0;width:76cqw;height:30cqw;z-index:6;opacity:0;border-radius:2.4cqw;display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:repeating-linear-gradient(90deg,#B97A42 0 9cqw,#8C5628 9cqw 9.5cqw),linear-gradient(180deg,#C98A50,#9C6230);background-blend-mode:multiply;
   box-shadow:0 3cqw 6cqw rgba(0,0,0,.55), inset 0 0 0 .6cqw rgba(0,0,0,.18)}
 .stage .under.on{opacity:1}
 .stage .under .runner{position:absolute;left:3cqw;right:3cqw;height:1.6cqw;border-radius:1cqw;background:linear-gradient(180deg,#5A6886,#1E2A44)}
 .stage .under .runner.a{top:2.2cqw}.stage .under .runner.b{bottom:2.2cqw}
+.stage .under .paw{position:absolute;top:50%;width:9cqw;height:11cqw;margin-top:-5.5cqw;border-radius:46% 46% 40% 40%;background:radial-gradient(ellipse 34% 30% at 50% 58%,#A9C1E3 98%,transparent),radial-gradient(circle 14% at 28% 26%,#A9C1E3 98%,transparent),radial-gradient(circle 14% at 72% 26%,#A9C1E3 98%,transparent),#F4F8FF;box-shadow:0 0 0 .5cqw #C9DAF0}
+.stage .under .paw.l{left:-5cqw}.stage .under .paw.r{right:-5cqw}
+.stage .under .tail{position:absolute;right:8cqw;top:-7cqw;width:5cqw;height:10cqw;border-radius:1cqw;background:#C0372C;transform:rotate(18deg);transform-origin:50% 100%;animation:flap .18s ease-in-out infinite alternate}
+@keyframes flap{to{transform:rotate(30deg) scaleY(1.1)}}
 .stage .under small{font-size:1.8cqw;font-weight:700;color:#FFE9D6;opacity:.9}
 .stage .under b{font-weight:800;font-stretch:120%;color:#fff;line-height:1.05;white-space:nowrap;text-shadow:0 .3cqw 0 #C0372C, 0 .6cqw 1.2cqw rgba(0,0,0,.4)}
 

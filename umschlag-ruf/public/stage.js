@@ -392,7 +392,7 @@ const SLED_FRONT = `
   <path d="M254 300 Q254 322 230 322 L216 322" stroke="#0A1620" stroke-width="9" fill="none" stroke-linecap="round"/>
   <circle cx="46" cy="252" r="9" fill="#0A1620"/><circle cx="254" cy="252" r="9" fill="#0A1620"/>`;
 // Fröhlicher Yeti in INTERSPORT-Farben: blaue Jacke, roter Schal, rote Mütze – sitzt im Schlitten, Arme hoch
-function yetiRiderSVG() {
+function yetiRiderSVG() { // Arme hoch – hält Schild oder jubelt
   const fur = "#F4F8FF", shade = "#C9DAF0", skin = "#BFD3F0", blue = "#3B43A6", red = "#C0372C";
   return `<svg class="rider-svg" viewBox="0 0 300 330" aria-hidden="true">
     <defs><linearGradient id="lens2" x1="0" x2="1"><stop offset="0" stop-color="#3B43A6"/><stop offset=".55" stop-color="#5FA8E8"/><stop offset="1" stop-color="#D8F4FF"/></linearGradient></defs>
@@ -421,6 +421,29 @@ function yetiRiderSVG() {
     ${SLED_FRONT}
   </svg>`;
 }
+// Beleuchtete Piste in Perspektive: oben weit weg, unten direkt vor der Kamera
+function pisteSVG(withRamp = false) {
+  const L = (t) => [905 + (300 - 905) * t, 470 + (900 - 470) * t], R = (t) => [995 + (1300 - 995) * t, 470 + (900 - 470) * t];
+  const ts = [.04, .1, .18, .29, .43, .62, .86];
+  const posts = ts.map((t, i) => {
+    const k = .25 + t * 1.6, side = [L(t), R(t)];
+    return side.map(([x, y], j) => `<g transform="translate(${x.toFixed(0)} ${y.toFixed(0)}) scale(${k.toFixed(2)})">
+      <rect x="-2" y="-46" width="4" height="46" fill="#55666F"/><rect x="-7" y="-30" width="14" height="9" fill="${(i + j) % 2 ? "#C0372C" : "#3B43A6"}"/>
+      <circle cx="0" cy="-48" r="4" fill="#F4F8FF"/><circle cx="0" cy="-48" r="16" fill="#F4F8FF" opacity=".18"/></g>`).join("");
+  }).join("");
+  const grooves = Array.from({ length: 9 }, (_, i) => { const u = (i + 1) / 10; const a = 905 + 90 * u, b = 300 + 1000 * u;
+    return `<path d="M${a} 470 L${b} 900" stroke="#FFFFFF" stroke-width="2" opacity=".18"/>`; }).join("");
+  return `<svg class="piste-svg" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="snowG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7F92B2"/><stop offset=".45" stop-color="#C3D0E3"/><stop offset="1" stop-color="#F2F6FB"/></linearGradient>
+      <radialGradient id="poolG" cx=".5" cy=".9" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+    <path d="M300 900 Q690 640 905 470 L995 470 Q1120 640 1300 900Z" fill="url(#snowG)"/>
+    ${grooves}
+    <path d="M940 470 Q900 650 760 900 M960 470 Q940 650 840 900" stroke="#8FA2C0" stroke-width="3" fill="none" opacity=".5"/>
+    <path d="M300 900 Q690 640 905 470 L995 470 Q1120 640 1300 900Z" fill="url(#poolG)"/>
+    ${withRamp ? `<path d="M610 900 Q640 805 800 795 Q960 805 990 900Z" fill="#F7FAFE"/><path d="M640 860 Q800 830 960 860" stroke="#3B43A6" stroke-width="10" fill="none" opacity=".8"/><path d="M640 875 Q800 848 960 875" stroke="#C0372C" stroke-width="6" fill="none" opacity=".8"/>` : ""}
+    ${posts}
+  </svg>`;
+}
 const fitText = (txt, base, maxLen = 9) => Math.min(base, base * maxLen / Math.max([...txt].length, 1));
 function sledBells(on) {
   if (sledBells.iv) clearInterval(sledBells.iv);
@@ -430,8 +453,8 @@ function sledBells(on) {
 function pisteAt(box, p, zig = 1, endX = .5, endS = 1.15) {
   const W = box.clientWidth, H = box.clientHeight;
   const e = Math.pow(p, 1.9);
-  const x = W * (.6 + (endX - .6) * e) + Math.sin(p * Math.PI * 5) * W * .16 * e * zig;
-  const y = H * (.5 + (.97 - .5) * e);
+  const x = W * (.594 + (endX - .594) * e) + Math.sin(p * Math.PI * 5) * W * .14 * e * zig;
+  const y = H * (.53 + (.97 - .53) * e);
   const s = .06 + (endS - .06) * Math.pow(p, 2.3);
   return { x, y, s, lean: Math.cos(p * Math.PI * 5) * 12 * zig * Math.min(1, p * 2) };
 }
@@ -439,7 +462,7 @@ function pisteAt(box, p, zig = 1, endX = .5, endS = 1.15) {
 async function runYeti(d, main) {
   const name = d.display || d.name;
   main.innerHTML = `<div class="kicker yk">Der Yeti bringt den Namen …</div>
-    <div class="slope" id="slope"><div class="rider" id="rider">
+    <div class="slope" id="slope">${pisteSVG()}<div class="rider" id="rider">
       <div class="sign" id="sign"><small>Gewonnen hat</small><b style="font-size:${fitText(name, 4.4).toFixed(2)}cqw">${esc(name)}</b></div>
       ${yetiRiderSVG()}</div></div>`;
   const box = $("slope"), rider = $("rider"), sign = $("sign"), svg = rider.querySelector("svg");
@@ -450,7 +473,7 @@ async function runYeti(d, main) {
   let lastTurn = 0;
   // 1) Abfahrt im Zickzack auf die Kamera zu – das Schild wird erst nah lesbar
   await frames(9000, (p, dt, ms) => {
-    const q = pisteAt(box, p, 1, .34, .9);
+    const q = pisteAt(box, p, .55, .4, .9);
     rider.style.transform = `translate(${q.x}px,${q.y}px) translate(-50%,-100%) scale(${q.s.toFixed(4)}) rotate(${q.lean.toFixed(2)}deg)`;
     rider.style.filter = `blur(${Math.max(0, 2.6 - p * 4).toFixed(2)}px)`;
     scrape.set(.08 + p * .5, .12); wind = 1 + p * 3;
@@ -463,7 +486,7 @@ async function runYeti(d, main) {
   const s = posIn(rider, .5, .96);
   snowPuff(s.x - fxW * .12, s.y, 160, { dir: -Math.PI / 2 - .5, spread: 1.3, power: 15 });
   snowPuff(s.x + fxW * .12, s.y, 160, { dir: -Math.PI / 2 + .5, spread: 1.3, power: 15 });
-  const q = pisteAt(box, 1, 1, .34, .9);
+  const q = pisteAt(box, 1, .55, .4, .9);
   rider.animate([{ transform: rider.style.transform }, { transform: `translate(${q.x}px,${q.y}px) translate(-50%,-100%) scale(.9) rotate(-3deg)` }, { transform: `translate(${q.x}px,${q.y}px) translate(-50%,-100%) scale(.9) rotate(0)` }], { duration: 650, easing: EASE_OUT, fill: "forwards" });
   await sleep(700);
   // 3) Jubel: Schild hoch, hüpfen
@@ -478,33 +501,37 @@ async function runYeti(d, main) {
 async function runSchlitten(d, main) {
   const name = d.display || d.name;
   main.innerHTML = `<div class="kicker yk">Schlitten frei …</div>
-    <div class="slope" id="slope"><div class="ramp"></div><div class="sledsolo" id="sled"><svg viewBox="0 220 300 110" aria-hidden="true">${SLED_FRONT}</svg></div></div>
-    <div class="under" id="under"><i class="runner a"></i><i class="runner b"></i><small>Gewonnen hat</small><b style="font-size:${fitText(name, 7.4, 10).toFixed(2)}cqw">${esc(name)}</b></div>`;
-  const box = $("slope"), sled = $("sled"), under = $("under");
+    <div class="slope" id="slope">${pisteSVG(true)}<div class="rider cheer" id="sled">${yetiRiderSVG()}</div></div>
+    <div class="under" id="under"><i class="paw l"></i><i class="paw r"></i><i class="tail"></i><i class="runner a"></i><i class="runner b"></i><small>Gewonnen hat</small><b style="font-size:${fitText(name, 7.4, 10).toFixed(2)}cqw">${esc(name)}</b></div>`;
+  const box = $("slope"), sled = $("sled"), under = $("under"), svg = sled.querySelector("svg");
+  const scarf = svg.querySelector(".r-scarf");
+  scarf.animate([{ transform: "rotate(0)" }, { transform: "rotate(-8deg)" }, { transform: "rotate(0)" }], { duration: 240, iterations: Infinity });
+  svg.querySelectorAll(".r-armL,.r-armR").forEach((a, i) => a.animate([{ transform: "rotate(0)" }, { transform: `rotate(${i ? 10 : -10}deg)` }, { transform: "rotate(0)" }], { duration: 380, iterations: Infinity, delay: i * 190 }));
   const scrape = SFX.wind(); scrape.set(.1, .3); sledBells(true);
   let lastTurn = 0;
-  // 1) rasante Abfahrt auf die Schanze zu
-  await frames(6200, (p) => {
-    const q = pisteAt(box, p * .9, .7);
-    sled.style.transform = `translate(${q.x}px,${q.y}px) translate(-50%,-100%) scale(${(q.s * 1.1).toFixed(4)}) rotate(${q.lean.toFixed(2)}deg)`;
-    sled.style.filter = `blur(${Math.max(0, 2 - p * 3).toFixed(2)}px)`;
+  // 1) Abfahrt die Piste hinunter auf die Schanze zu
+  await frames(7200, (p) => {
+    const q = pisteAt(box, p * .9, .55, .5, .85);
+    sled.style.transform = `translate(${q.x}px,${q.y}px) translate(-50%,-100%) scale(${q.s.toFixed(4)}) rotate(${q.lean.toFixed(2)}deg)`;
+    sled.style.filter = `blur(${Math.max(0, 2.2 - p * 3).toFixed(2)}px)`;
     scrape.set(.1 + p * .7, .1); wind = 1 + p * 4;
     const turn = Math.floor(p * 4.5);
-    if (turn !== lastTurn) { lastTurn = turn; SFX.whoosh(.3, .1 + p * .2); const s = posIn(sled, .5, .95); snowPuff(s.x, s.y, 20 + p * 40, { power: 3 + p * 7, spread: 1.3 }); }
+    if (turn !== lastTurn) { lastTurn = turn; SFX.whoosh(.3, .1 + p * .2); const s = posIn(sled, .5, .97); snowPuff(s.x, s.y, 20 + p * 40, { power: 3 + p * 7, spread: 1.3 }); }
   });
-  // 2) Absprung über die Kamera
-  sledBells(false); SFX.whoosh(.5, .4); scrape.stop(.3);
-  const s0 = posIn(sled, .5, .9); snowPuff(s0.x, s0.y, 180, { power: 14, spread: 1.4 });
-  await sled.animate([{ transform: sled.style.transform, opacity: 1 }, { transform: `translate(${box.clientWidth / 2}px,${box.clientHeight * .2}px) translate(-50%,-100%) scale(3.2) rotate(-8deg)`, opacity: 0 }], { duration: 420, easing: "cubic-bezier(.55,0,1,.45)", fill: "forwards" }).finished;
-  // 3) Zeitlupe: Unterseite fliegt über uns hinweg, darauf steht der Name
-  SFX.slowmo(); storm = 0; wind = .2; shake(.6, 300);
+  // 2) Absprung von der Schanze – der Yeti fliegt auf die Kamera zu
+  sledBells(false); SFX.whoosh(.5, .4); SFX.boing(); scrape.stop(.3);
+  const s0 = posIn(sled, .5, .95); snowPuff(s0.x, s0.y, 200, { power: 15, spread: 1.4 });
+  await sled.animate([{ transform: sled.style.transform, opacity: 1 }, { transform: `translate(${box.clientWidth / 2}px,${box.clientHeight * .35}px) translate(-50%,-100%) scale(2.6) rotate(-10deg)`, opacity: 1, offset: .7 },
+    { transform: `translate(${box.clientWidth / 2}px,${box.clientHeight * .05}px) translate(-50%,-100%) scale(4) rotate(-14deg)`, opacity: 0 }], { duration: 650, easing: "cubic-bezier(.4,0,.9,.6)", fill: "forwards" }).finished;
+  // 3) Zeitlupe: Schlitten-Unterseite fliegt über uns hinweg – darauf der Name
+  SFX.slowmo(); wind = .2; shake(.6, 300);
   under.classList.add("on");
   await under.animate([
     { transform: "translate(-50%, 46cqw) rotate(-7deg) scale(.86)", filter: "blur(6px)" },
     { transform: "translate(-50%, -2cqw) rotate(-3deg) scale(1)", filter: "blur(0)", offset: .22 },
     { transform: "translate(-50%, -6cqw) rotate(-2deg) scale(1.02)", filter: "blur(0)", offset: .86 },
     { transform: "translate(-50%, -64cqw) rotate(3deg) scale(1.25)", filter: "blur(5px)" },
-  ], { duration: 3600, easing: "linear", fill: "forwards" }).finished;
+  ], { duration: 3800, easing: "linear", fill: "forwards" }).finished;
   SFX.thud(.35); shake(.4, 300);
   await sleep(350);
   return false;
