@@ -1,0 +1,85 @@
+/* Bühne – Ergänzungen für die fünf Zieh-Animationen */
+.stage .cone{transition:transform 1.4s cubic-bezier(.23,1,.32,1), opacity .25s ease}
+.stage.dim .cone{opacity:.06}
+.stage.dim .mast i.on{background:#2A3858;box-shadow:none}
+.stage::after{content:"";position:absolute;inset:0;z-index:7;pointer-events:none;opacity:0;transition:opacity 1.2s ease;
+  background:radial-gradient(ellipse 70% 62% at 50% 50%, rgba(244,248,255,0) 55%, rgba(220,229,234,.28) 78%, rgba(244,248,255,.7) 100%)}
+.stage.frosted::after{opacity:1}
+
+/* Countdown */
+.stage .count{will-change:transform,opacity,filter}
+
+/* A) Pisten-Walze */
+.stage .strip{will-change:transform,filter}
+.stage .strip div.hit.on{color:#fff;text-shadow:0 0 3cqw rgba(244,248,255,.8), 0 0 .6cqw #C0372C;transition:text-shadow .4s ease}
+
+/* B) Bergfahrt */
+.stage .rope.two{top:1.1cqw;opacity:.35}
+.stage .gondola{transform:rotate(-9deg)}
+.stage .gondola .cabin{background:linear-gradient(180deg,#4A53B8 0%,#3B43A6 60%,#2F3688 100%);border:.25cqw solid rgba(220,229,234,.25)}
+.stage .gondola .cabin::before{display:none}
+.stage .gondola .win{position:relative;width:100%;height:6.8cqw;margin-top:-1.2cqw;border-radius:1cqw;background:rgba(220,229,234,.16);display:grid;place-items:center;overflow:hidden}
+.stage .gondola .win span{font-size:2.3cqw;font-weight:800;font-stretch:110%;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+.stage .gondola .door{position:absolute;top:.8cqw;bottom:2.4cqw;width:50%;background:rgba(10,22,32,.0);transition:transform .7s cubic-bezier(.23,1,.32,1), background .3s}
+.stage .gondola .door.l{left:0;border-right:1px solid rgba(220,229,234,.25)}
+.stage .gondola .door.r{right:0}
+.stage .gondola.arrive .cabin{background:linear-gradient(180deg,#D6463A 0%,#C0372C 60%,#9E2D24 100%)}
+.stage .gondola.arrive .win{background:rgba(255,255,255,.22);box-shadow:0 0 2.4cqw rgba(255,255,255,.35) inset}
+.stage .gondola.open .door.l{transform:translateX(-102%)}
+.stage .gondola.open .door.r{transform:translateX(102%)}
+.stage .station{position:absolute;left:50%;bottom:0;width:34cqw;height:22cqw;transform:translateX(-50%);pointer-events:none;
+  background:radial-gradient(ellipse 50% 60% at 50% 100%, rgba(244,248,255,.18), rgba(244,248,255,0) 70%)}
+
+/* C) Anzeigetafel */
+.stage .flapboard{display:flex;flex-direction:column;gap:1.2cqw}
+.stage .flaprow{display:flex;gap:.45cqw}
+.stage .flap{perspective:24cqw}
+.stage .flap b{display:block;transform-origin:50% 50%;backface-visibility:hidden}
+.stage .frow-s .flap{background:#111A2E}
+.stage .frow-s .flap b{color:#F2B3AD}
+.stage .frow-s .flap.set b{color:#fff}
+.stage .flap.gap::after{display:none}
+
+/* D) Yeti */
+.stage .yk{position:absolute;top:11cqw;left:7cqw;z-index:5}
+.stage .yscene{position:absolute;left:0;right:0;bottom:0;height:100%}
+.stage .yeti{position:absolute;left:9cqw;bottom:3.5cqw;width:25cqw;z-index:2}
+.stage .yeti-svg{display:block;width:100%;height:auto;overflow:visible;transform-box:fill-box;transform-origin:50% 100%;filter:drop-shadow(0 1.4cqw 2cqw rgba(0,0,0,.35))}
+.stage .yeti-svg g{transform-box:fill-box}
+.stage .y-legL,.stage .y-legR{transform-origin:50% 10%}
+.stage .y-armL{transform-origin:70% 12%}
+.stage .y-armR{transform-origin:30% 12%}
+.stage .y-mouth{transform-origin:50% 20%}
+.stage .pile{position:absolute;left:31cqw;bottom:2.4cqw;width:30cqw;height:11cqw;z-index:1}
+.stage .pile svg{width:100%;height:100%;display:block}
+.stage .slip{position:absolute;z-index:3;padding:.5cqw 1cqw;border-radius:.4cqw;background:#F4F8FF;color:#0A1620;font-size:1.4cqw;font-weight:700;white-space:nowrap;box-shadow:0 .4cqw 1cqw rgba(0,0,0,.3);pointer-events:none}
+.stage .ticket{position:absolute;right:8cqw;top:12cqw;width:40cqw;height:21cqw;z-index:4;opacity:0;transform-style:preserve-3d;perspective:80cqw}
+.stage .ticket.show{opacity:1}
+.stage .ticket .face{position:absolute;inset:0;border-radius:1.2cqw;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 3cqw;
+  -webkit-mask:radial-gradient(circle 1.6cqw at 0 50%, transparent 98%, #000) left/51% 100% no-repeat, radial-gradient(circle 1.6cqw at 100% 50%, transparent 98%, #000) right/51% 100% no-repeat;
+          mask:radial-gradient(circle 1.6cqw at 0 50%, transparent 98%, #000) left/51% 100% no-repeat, radial-gradient(circle 1.6cqw at 100% 50%, transparent 98%, #000) right/51% 100% no-repeat}
+.stage .ticket .front{background:linear-gradient(135deg,#D6463A,#A32C23);color:#fff}
+.stage .ticket .front span{font-size:4.4cqw;font-weight:800;font-stretch:115%}
+.stage .ticket .front i{position:absolute;right:4cqw;top:50%;width:7cqw;height:7cqw;margin-top:-3.5cqw;border-radius:50%;border:.5cqw dashed rgba(255,255,255,.6)}
+.stage .ticket .back{display:none;background:#F4F8FF;color:#0A1620;box-shadow:0 2cqw 5cqw rgba(0,0,0,.45);border-left:1.4cqw solid #C0372C}
+.stage .ticket .back small{font-size:1.5cqw;color:#55666F;font-weight:600}
+.stage .ticket .back b{font-size:min(5.6cqw, 999px);font-weight:800;font-stretch:120%;line-height:1.05;color:#3B43A6;overflow-wrap:anywhere}
+
+/* E) Schneesturm */
+.stage .storm{position:absolute;inset:0;overflow:hidden}
+.stage .sn{position:absolute;left:0;top:0;font-size:3.6cqw;font-weight:800;font-stretch:120%;white-space:nowrap;color:#F4F8FF;will-change:transform,opacity,filter;text-shadow:0 0 1.2cqw rgba(10,22,32,.6)}
+.stage .sn.win{font-size:7.4cqw;color:#0A1620;text-shadow:none;z-index:3;opacity:0}
+.stage .sn.win b{font-weight:800}
+.stage .splat{position:absolute;left:0;top:0;width:78cqw;opacity:0;z-index:2;filter:drop-shadow(0 1cqw 2.4cqw rgba(0,0,0,.35))}
+.stage .splat-svg{display:block;width:100%;height:auto;overflow:visible}
+
+/* Ergebnis über einer stehenden Szene */
+.stage .overlay-result{position:absolute;right:7cqw;bottom:4cqw;z-index:8;display:flex;flex-direction:column;align-items:flex-end}
+.stage .overlay-result.center{right:auto;left:50%;transform:translateX(-50%);align-items:center;bottom:3cqw}
+.stage .overlay-result .banner{align-self:auto;margin-top:0}
+.stage .overlay-result .wmeta{transform:rotate(-4deg);margin-top:1.4cqw}
+
+@media (prefers-reduced-motion:reduce){.stage::after{transition:none}}
+.stage .ticket.flipped .front{display:none}
+.stage .ticket.flipped .back{display:flex}
+.stage .ticket .face{backface-visibility:visible;-webkit-backface-visibility:visible}

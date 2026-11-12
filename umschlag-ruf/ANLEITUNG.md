@@ -114,6 +114,6 @@ Unter *Einstellungen → 4. Check-in-Listen* siehst du, welche Liste wohin gehö
 - Für Beamer/TV: Seite mit `…/#buehne` öffnen, „Vollbild“ (oder Doppelklick auf die Bühne), oben „Ton an“.
 - Gewinn wählen (aus der Tombola-Liste oder frei eintippen) → „Namen ziehen“ oder Leertaste.
 - Gezogen wird aus allen auf der Eingangsliste eingecheckten Gästen; angezeigt werden nur Vorname + Initial.
-- Drei Animationen: Pisten-Walze, Bergfahrt (Gondeln), Anzeigetafel – standardmäßig abwechselnd.
+- Fünf Animationen mit eigenem Sound: Pisten-Walze (Ski-Stopp mit Schneespray), Bergfahrt (Gondeln, Stationsglocke), Anzeigetafel (Fallblatt), Yeti (stapft rein, brüllt, gräbt das Glückslos aus dem Schnee), Schneesturm (Namen wirbeln, einer klatscht an den Bildschirm) – standardmäßig abwechselnd, fest wählbar.
 - Ziehung startet auf allen Geräten gleichzeitig: Tablet bedienen, Beamer zeigt.
 - „Gewinn in Tombola bereitlegen“: Wenn der Gewinner am Stand ist, Ticket auf der Tombola-Liste scannen → Name/E-Mail landen in der Gewinnerliste.

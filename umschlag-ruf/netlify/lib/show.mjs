@@ -40,12 +40,13 @@ export function buildPool(state, mapping, { test = false } = {}) {
   return pool;
 }
 
-export const ANIMS = ["piste", "gondel", "tafel"];
+export const ANIMS = ["piste", "gondel", "tafel", "yeti", "sturm"];
 
 export function drawFrom(show, pool, { prize = "", prizeId = null, unique = true, test = false, anim = "auto" }) {
   show = { ...structuredClone(EMPTY_SHOW), ...show };
   const taken = new Set(show.draws.filter((d) => !d.test || test).map((d) => d.key));
-  const eligible = unique ? pool.filter((p) => !taken.has(p.key)) : pool;
+  let eligible = unique ? pool.filter((p) => !taken.has(p.key)) : pool;
+  if (!eligible.length && test) eligible = pool; // Testziehungen dürfen sich wiederholen
   if (!eligible.length) return { show, error: pool.length ? "Alle im Lostopf wurden schon gezogen." : "Der Lostopf ist leer – noch niemand eingecheckt." };
   const win = eligible[randomInt(eligible.length)];
   // Namen für die Walze: zufällige Auswahl aus dem Lostopf

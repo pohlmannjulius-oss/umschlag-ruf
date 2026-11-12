@@ -255,6 +255,7 @@
   .pin form{background:#fff;border-radius:20px;padding:32px;width:min(380px,90vw);text-align:center}
   .pin input{width:100%;font-size:28px;text-align:center;padding:12px;border:1px solid var(--line);border-radius:12px;margin:16px 0;letter-spacing:6px}
 </style>
+<link rel="stylesheet" href="stage.css">
 </head>
 <body>
 <div class="pin" id="pin">
@@ -366,7 +367,7 @@
         <button class="btn ghost" id="armBtn" hidden>Gewinn in Tombola bereitlegen</button>
       </div>
       <div class="line">
-        <select id="sAnim" style="flex:0 1 260px"><option value="auto">Animation: abwechselnd</option><option value="piste">Pisten-Walze</option><option value="gondel">Bergfahrt (Gondeln)</option><option value="tafel">Anzeigetafel</option></select>
+        <select id="sAnim" style="flex:0 1 260px"><option value="auto">Animation: abwechselnd</option><option value="piste">Pisten-Walze</option><option value="gondel">Bergfahrt (Gondeln)</option><option value="tafel">Anzeigetafel</option><option value="yeti">Yeti</option><option value="sturm">Schneesturm</option></select>
         <label><input type="checkbox" id="sUnique" checked>Jeder nur einmal</label>
 
       </div>
@@ -980,259 +981,6 @@ document.addEventListener("click", async (e) => {
   poll();
 });
 
-// ---------- Bühne ----------
-const stageEl = $("stage"), fxCanvas = $("fx"), fx = fxCanvas.getContext("2d");
-const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-let stagePlayKey, stagePlaying = false, stageOn = false, poolInfo = null, poolAt = 0;
-
-// --- Ton: Zeitnahme-Piepser, Walzen-Ticks, Fanfare ---
-function tone(freq, start, dur, vol = .35, type = "sine"){
-  if (!sound) return;
-  try {
-    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
-    const t0 = ac.currentTime + start, o = ac.createOscillator(), g = ac.createGain();
-    o.type = type; o.frequency.value = freq;
-    g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
-    o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0 + dur + .05);
-  } catch {}
-}
-const reelTick = () => tone(2400, 0, .03, .08, "square");
-function fanfare(){ [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * .12, i === 3 ? 1.2 : .35, .28, "triangle")); tone(1046.5, .48, 1.4, .18, "sine"); }
-
-// --- Schnee + Konfetti ---
-let flakes = [], bits = [], wind = 0, fxRaf = null, fxW = 0, fxH = 0;
-function fxResize(){
-  const r = stageEl.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
-  fxW = r.width; fxH = r.height; fxCanvas.width = fxW * d; fxCanvas.height = fxH * d; fx.setTransform(d, 0, 0, d, 0, 0);
-  const n = Math.round(fxW * fxH / 5200);
-  flakes = Array.from({ length: n }, () => ({ x: Math.random() * fxW, y: Math.random() * fxH, r: Math.random() * 1.8 + .5, v: Math.random() * .5 + .35, s: Math.random() * Math.PI * 2 }));
-}
-new ResizeObserver(fxResize).observe(stageEl);
-function burst(){
-  const cols = ["#FFFFFF", "#C0372C", "#3B43A6", "#DCE5EA", "#FFFFFF"];
-  for (let i = 0; i < 220; i++) {
-    const a = Math.random() * Math.PI * 2, sp = Math.random() * 9 + 3;
-    bits.push({ x: fxW * .42, y: fxH * .5, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 4, w: Math.random() * 8 + 4, h: Math.random() * 4 + 2,
-      rot: Math.random() * 6, vr: (Math.random() - .5) * .3, c: cols[i % cols.length], life: 1 });
-  }
-}
-function fxLoop(){
-  fx.clearRect(0, 0, fxW, fxH);
-  wind += ((stagePlaying ? 3.2 : .4) - wind) * .03;
-  fx.fillStyle = "rgba(255,255,255,.85)";
-  for (const f of flakes) {
-    f.s += .02; f.y += f.v * (1 + wind * .6); f.x += Math.sin(f.s) * .3 + wind * .9 * f.v;
-    if (f.y > fxH) { f.y = -4; f.x = Math.random() * fxW; } if (f.x > fxW) f.x = 0;
-    fx.globalAlpha = .35 + f.r / 4; fx.beginPath(); fx.arc(f.x, f.y, f.r, 0, 7); fx.fill();
-  }
-  fx.globalAlpha = 1;
-  bits = bits.filter(b => b.life > 0 && b.y < fxH + 20);
-  for (const b of bits) {
-    b.vy += .22; b.vx *= .99; b.x += b.vx; b.y += b.vy; b.rot += b.vr; b.life -= .004;
-    fx.save(); fx.translate(b.x, b.y); fx.rotate(b.rot); fx.globalAlpha = Math.min(1, b.life * 1.5); fx.fillStyle = b.c; fx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); fx.restore();
-  }
-  fxRaf = stageOn && !document.hidden ? requestAnimationFrame(fxLoop) : null;
-}
-function stageVisible(on){ stageOn = on; if (on) { fxResize(); if (!fxRaf && !reduceMotion) fxRaf = requestAnimationFrame(fxLoop); refreshPool(); } }
-document.addEventListener("visibilitychange", () => { if (stageOn && !fxRaf && !reduceMotion && !document.hidden) fxRaf = requestAnimationFrame(fxLoop); });
-
-const lamps = () => [...stageEl.querySelectorAll(".mast i")];
-function setLamps(n){ lamps().forEach((l, i) => l.classList.toggle("on", (i % 3) < n)); }
-const fmtWatch = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}.${String(Math.floor(ms / 10) % 100).padStart(2, "0")}`;
-
-async function refreshPool(){
-  if (Date.now() - poolAt < 4000) return; poolAt = Date.now();
-  try { poolInfo = await tApi({ action:"showPool" }); } catch { poolInfo = null; }
-  renderStage();
-}
-
-function stageIdle(){
-  const sh = state.show || { draws: [] };
-  const prize = currentPrizeLabel();
-  const n = poolInfo ? ($("sUnique").checked ? poolInfo.eligible : poolInfo.total) : null;
-  return `<div class="kicker">${n === 0 ? "Noch niemand im Lostopf" : "Gleich wird gezogen"}</div>
-    <div class="prizeline">${esc(prize || "Flutlicht-Verlosung")}</div>
-    ${n ? `<div class="pool">${n} ${n === 1 ? "Gast" : "Gäste"} im Lostopf</div>` : ""}`;
-}
-function stageResult(d){
-  return `<div class="winner">${esc(d.display || d.name)}</div>
-    ${d.prize ? `<div class="banner"><small>gewinnt</small><span>${esc(d.prize)}</span></div>` : ""}
-    <div class="wmeta">Bitte am Tombola-Stand melden${d.test ? " (Testziehung)" : ""}</div>`;
-}
-function currentPrizeLabel(){
-  const t = state.tombola || { prizes: [] };
-  return $("sPrizeText").value.trim() || t.prizes.find(p => p.id === $("sPrize").value)?.name || "";
-}
-
-function renderStage(){
-  const sh = state.show || { draws: [] };
-  const t = state.tombola || { prizes: [] };
-  // Gewinn-Auswahl aktualisieren, ohne die aktuelle Auswahl zu verlieren
-  const sel = $("sPrize"), cur = sel.value;
-  const opts = `<option value="">Ohne Gewinn – nur Namen ziehen</option>` + t.prizes.map(p => {
-    const left = prizeLeft(t, p); return `<option value="${esc(p.id)}" ${left !== null && left <= 0 ? "disabled" : ""}>${esc(p.name)}${left !== null ? ` (${left} übrig)` : ""}</option>`; }).join("");
-  if (htmlCache.sPrize !== opts && document.activeElement !== sel) { htmlCache.sPrize = opts; sel.innerHTML = opts; sel.value = cur; }
-
-  const real = sh.draws.filter(d => !d.test);
-  $("sDrawn").textContent = real.length; $("bNo").textContent = sh.draws.length;
-  const n = poolInfo ? ($("sUnique").checked ? poolInfo.eligible : poolInfo.total) : null;
-  $("sPool").textContent = n ?? "–"; $("bPool").textContent = n ?? "–";
-
-  setHtml("sHist", sh.draws.length ? sh.draws.map(d => `
-    <div class="row"><div><div class="who">${esc(d.name)}${d.test ? `<span class="tag" style="background:var(--bg);color:var(--slate)">Test</span>` : ""}</div>
-      <div class="sub">${esc(d.prize || "ohne Gewinn")} · ${esc(d.code)}${d.nr ? " · Umschlag " + esc(d.nr) : ""} · ${time(d.t)}</div></div>
-      <button class="btn ghost" style="padding:8px 12px;font-size:14px" data-sdel="${esc(d.id)}">Löschen</button></div>`).join("") : `<div class="none" style="padding:6px 0">Noch niemand gezogen.</div>`);
-
-  // neue Ziehung → auf allen Bildschirmen abspielen
-  const key = sh.playKey || null;
-  if (stagePlayKey !== undefined && key && key !== stagePlayKey) { stagePlayKey = key; const d = sh.draws.find(x => x.id === sh.currentId); if (d) playDraw(d); return; }
-  stagePlayKey = key;
-  if (stagePlaying) return;
-  const d = sh.draws.find(x => x.id === sh.currentId);
-  stageEl.classList.toggle("lit", true); stageEl.classList.toggle("finish", !!d);
-  setLamps(3);
-  $("armBtn").hidden = !(d && d.prizeId && !d.test && state.tombola?.armed !== d.prizeId);
-  setHtml("stageMain", d ? stageResult(d) : stageIdle());
-}
-
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-// Läuft eine Bewegung mit Abbremsen (easeOutQuart) über dur ms; onFrame(e, now) pro Frame
-function ease(dur, onFrame){
-  const t0 = performance.now();
-  return new Promise(res => {
-    const step = (now) => {
-      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 4);
-      onFrame(e, now); $("bWatch").textContent = fmtWatch(watchStart ? now - watchStart : 0);
-      p < 1 ? requestAnimationFrame(step) : res();
-    };
-    requestAnimationFrame(step);
-  });
-}
-let watchStart = 0;
-const reelNames = (d, n) => { const names = d.reel.length ? d.reel : ["…"]; const l = []; while (l.length < n) l.push(...names); l.length = n; return l; };
-
-async function playDraw(d){
-  stagePlaying = true; $("drawBtn").disabled = $("testDrawBtn").disabled = true; $("armBtn").hidden = true;
-  const main = $("stageMain"); delete htmlCache.stageMain;
-  stageEl.classList.remove("finish", "lit");
-  if (reduceMotion) { await sleep(300); return finishDraw(d); }
-
-  // 1) Start: Lampen gehen an, Piepser 3 – 2 – 1
-  setLamps(0); $("bWatch").textContent = "0:00.00"; watchStart = 0;
-  main.innerHTML = `<div class="kicker">${esc(d.prize ? d.prize : "Ziehung")}</div><div class="count" id="cnt">3</div>`;
-  for (let i = 3; i >= 1; i--) { $("cnt").textContent = i; setLamps(4 - i); tone(1000, 0, .14, .3); await sleep(780); }
-  stageEl.classList.add("lit"); tone(1500, 0, .45, .35);
-  watchStart = performance.now();
-
-  // 2) Je nach Ziehung eine von drei Animationen
-  await ({ piste: runPiste, gondel: runGondel, tafel: runTafel }[d.anim] || runPiste)(d, main);
-  await sleep(450);
-  finishDraw(d);
-}
-
-// A) Pisten-Walze: Namen rauschen die Pistendiagonale hinunter
-async function runPiste(d, main){
-  const list = reelNames(d, 46).concat(d.display, "", "");
-  main.innerHTML = `<div class="kicker">Gezogen wird …</div><div class="reel"><div class="strip" id="strip">${list.map(x => `<div>${esc(x)}</div>`).join("")}</div></div>`;
-  const strip = $("strip"), lh = strip.firstElementChild.offsetHeight, target = list.length - 4;
-  let last = 0;
-  await ease(6500, (e) => { const pos = e * target; strip.style.transform = `translateY(${-pos * lh}px)`; if (Math.floor(pos) !== last) { last = Math.floor(pos); reelTick(); } });
-}
-
-// B) Bergfahrt: Gondeln fahren das Seil hinauf, die Gewinner-Gondel hält im Licht
-async function runGondel(d, main){
-  const list = reelNames(d, 16).concat(d.display, ...reelNames(d, 2));
-  const win = 16;
-  main.innerHTML = `<div class="kicker">Bergfahrt …</div>
-    <div class="ropeway"><div class="rope"></div><div class="train" id="train">${list.map((x, i) => `
-      <div class="gondola" data-i="${i}"><i class="grip"></i><i class="hanger"></i><div class="cabin"><span>${esc(x)}</span><small>${String(i + 7).padStart(2, "0")}</small></div></div>`).join("")}</div></div>`;
-  const train = $("train"), g = train.firstElementChild, pitch = g.offsetWidth + parseFloat(getComputedStyle(train).columnGap || 0);
-  const cx = train.parentElement.clientWidth / 2;
-  const at = (i) => cx - (i * pitch + g.offsetWidth / 2);
-  const x0 = at(-1.5), x1 = at(win);
-  let last = -9;
-  await ease(7000, (e) => {
-    const x = x0 + (x1 - x0) * e; train.style.transform = `translateX(${x}px)`;
-    const c = Math.round((cx - x - g.offsetWidth / 2) / pitch); if (c !== last) { last = c; reelTick(); }
-    // leichtes Pendeln der Kabinen
-    train.style.setProperty("--sway", `${Math.sin(e * 40) * (1 - e) * 6}deg`);
-  });
-  train.querySelector(`[data-i="${win}"]`).classList.add("arrive");
-  tone(660, 0, .25, .25, "triangle"); tone(880, .12, .35, .25, "triangle");
-  await sleep(900);
-}
-
-// C) Anzeigetafel: Fallblatt-Buchstaben klappen, bis der Name steht
-async function runTafel(d, main){
-  const name = d.display || d.name, chars = [...name];
-  const tw = Math.min(6.2, 84 / Math.max(chars.length, 8));
-  main.innerHTML = `<div class="kicker">Anzeigetafel</div>
-    <div class="flapboard" style="--tw:${tw}cqw">${chars.map((c, i) => `<span class="flap ${c === " " ? "gap" : ""}" data-i="${i}"><b></b></span>`).join("")}</div>
-    <div class="flapsub" id="flapsub">${esc(d.prize ? "Gewinn: " + d.prize : "")}</div>`;
-  const tiles = [...main.querySelectorAll(".flap")], abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ0123456789";
-  const settle = chars.map((c, i) => 1400 + i * 300 + Math.random() * 160);
-  const t0 = performance.now(), done = new Set();
-  await new Promise(res => {
-    const iv = setInterval(() => {
-      const t = performance.now() - t0;
-      tiles.forEach((el, i) => {
-        if (done.has(i) || chars[i] === " ") { if (chars[i] === " ") done.add(i); return; }
-        const b = el.firstElementChild;
-        if (t >= settle[i]) { done.add(i); b.textContent = chars[i]; el.classList.add("set"); tone(150 + Math.random() * 40, 0, .05, .2, "square"); }
-        else b.textContent = abc[Math.floor(Math.random() * abc.length)];
-        el.classList.remove("flip"); void el.offsetWidth; el.classList.add("flip");
-      });
-      $("bWatch").textContent = fmtWatch(performance.now() - watchStart);
-      if (done.size === tiles.length) { clearInterval(iv); res(); }
-    }, 70);
-  });
-  await sleep(700);
-}
-function finishDraw(d){
-  stageEl.classList.add("lit", "finish"); setLamps(3);
-  $("stageMain").innerHTML = stageResult(d); htmlCache.stageMain = $("stageMain").innerHTML;
-  if (!reduceMotion) burst(); fanfare();
-  stagePlaying = false; $("drawBtn").disabled = $("testDrawBtn").disabled = false; poolAt = 0; refreshPool();
-  $("armBtn").hidden = !(d.prizeId && !d.test);
-}
-
-async function startDraw(test){
-  if (stagePlaying) return;
-  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume?.(); } catch {}
-  $("drawBtn").disabled = true;
-  try {
-    await tApi({ action:"showDraw", prizeId: test ? null : ($("sPrize").value || null), prize: test ? (currentPrizeLabel() || "Testgewinn") : $("sPrizeText").value.trim(), unique: $("sUnique").checked, test, anim: $("sAnim").value });
-    $("sPrizeText").value = "";
-  } catch (err) { alert(err.message); $("drawBtn").disabled = false; return; }
-  poll();
-}
-$("drawBtn").onclick = () => startDraw(false);
-$("testDrawBtn").onclick = () => startDraw(true);
-$("armBtn").onclick = async () => {
-  const d = (state.show?.draws || []).find(x => x.id === state.show.currentId); if (!d?.prizeId) return;
-  try { await tApi({ action:"arm", id: d.prizeId }); $("armBtn").hidden = true; alert(`„${d.prize}“ liegt im Tombola-Reiter bereit. Wenn ${d.display} am Stand ist: Ticket auf der Tombola-Liste scannen.`); } catch (err) { alert(err.message); }
-  poll();
-};
-$("fsBtn").onclick = () => { try { stageEl.requestFullscreen?.() ?? stageEl.webkitRequestFullscreen?.(); } catch {} };
-stageEl.ondblclick = () => document.fullscreenElement ? document.exitFullscreen() : $("fsBtn").click();
-try { $("sAnim").value = localStorage.getItem("ur_anim") || "auto"; } catch {}
-$("sAnim").onchange = () => ls.set("ur_anim", $("sAnim").value);
-$("sUnique").onchange = () => { poolAt = 0; refreshPool(); };
-$("sPrize").onchange = $("sPrizeText").oninput = () => { if (!stagePlaying && !state.show?.currentId) { delete htmlCache.stageMain; renderStage(); } };
-$("sResetBtn").onclick = async () => { if (!confirm("Liste der gezogenen Namen leeren? Danach können alle wieder gezogen werden.")) return; await tApi({ action:"showReset" }).catch(()=>{}); poolAt = 0; poll(); };
-document.addEventListener("click", async (e) => {
-  const x = e.target.closest("[data-sdel]"); if (!x) return;
-  if (!confirm("Diese Ziehung löschen? Die Person kann dann wieder gezogen werden.")) return;
-  await tApi({ action:"showDelete", id: x.dataset.sdel }).catch(()=>{}); poolAt = 0; poll();
-});
-document.addEventListener("keydown", (e) => {
-  if (tab !== "S" || e.code !== "Space" || /INPUT|SELECT|TEXTAREA|BUTTON/.test(document.activeElement?.tagName || "")) return;
-  e.preventDefault();
-  if (state.show?.currentId && !stagePlaying) { tApi({ action:"showClear" }).then(poll); return; } // erst zurück auf „Gleich wird gezogen“
-  $("drawBtn").click();
-});
-setInterval(() => { if (stageOn) refreshPool(); }, 5000);
-
 // ---------- Abfrage alle 1,5 s ----------
 let busy = false;
 async function poll(){
@@ -1337,5 +1085,6 @@ $("resetBtn").onclick = async () => {
   await api("/api/state", { method:"POST", body: JSON.stringify({ action:"reset" }) }).catch(()=>{}); seen = null; poll();
 };
 </script>
+<script src="stage.js"></script>
 </body>
 </html>
