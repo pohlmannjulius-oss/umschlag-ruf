@@ -40,30 +40,29 @@
 .stage .frow-s .flap.set b{color:#fff}
 .stage .flap.gap::after{display:none}
 
-/* D) Yeti */
+/* D) Yeti auf dem Schlitten & F) Schlitten */
 .stage .yk{position:absolute;top:11cqw;left:7cqw;z-index:5}
-.stage .yscene{position:absolute;left:0;right:0;bottom:0;height:100%}
-.stage .yeti{position:absolute;left:9cqw;bottom:3.5cqw;width:25cqw;z-index:2}
-.stage .yeti-svg{display:block;width:100%;height:auto;overflow:visible;transform-box:fill-box;transform-origin:50% 100%;filter:drop-shadow(0 1.4cqw 2cqw rgba(0,0,0,.35))}
-.stage .yeti-svg g{transform-box:fill-box}
-.stage .y-legL,.stage .y-legR{transform-origin:50% 10%}
-.stage .y-armL{transform-origin:70% 12%}
-.stage .y-armR{transform-origin:30% 12%}
-.stage .y-mouth{transform-origin:50% 20%}
-.stage .pile{position:absolute;left:31cqw;bottom:2.4cqw;width:30cqw;height:11cqw;z-index:1}
-.stage .pile svg{width:100%;height:100%;display:block}
-.stage .slip{position:absolute;z-index:3;padding:.5cqw 1cqw;border-radius:.4cqw;background:#F4F8FF;color:#0A1620;font-size:1.4cqw;font-weight:700;white-space:nowrap;box-shadow:0 .4cqw 1cqw rgba(0,0,0,.3);pointer-events:none}
-.stage .ticket{position:absolute;right:8cqw;top:12cqw;width:40cqw;height:21cqw;z-index:4;opacity:0;transform-style:preserve-3d;perspective:80cqw}
-.stage .ticket.show{opacity:1}
-.stage .ticket .face{position:absolute;inset:0;border-radius:1.2cqw;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 3cqw;
-  -webkit-mask:radial-gradient(circle 1.6cqw at 0 50%, transparent 98%, #000) left/51% 100% no-repeat, radial-gradient(circle 1.6cqw at 100% 50%, transparent 98%, #000) right/51% 100% no-repeat;
-          mask:radial-gradient(circle 1.6cqw at 0 50%, transparent 98%, #000) left/51% 100% no-repeat, radial-gradient(circle 1.6cqw at 100% 50%, transparent 98%, #000) right/51% 100% no-repeat}
-.stage .ticket .front{background:linear-gradient(135deg,#D6463A,#A32C23);color:#fff}
-.stage .ticket .front span{font-size:4.4cqw;font-weight:800;font-stretch:115%}
-.stage .ticket .front i{position:absolute;right:4cqw;top:50%;width:7cqw;height:7cqw;margin-top:-3.5cqw;border-radius:50%;border:.5cqw dashed rgba(255,255,255,.6)}
-.stage .ticket .back{display:none;background:#F4F8FF;color:#0A1620;box-shadow:0 2cqw 5cqw rgba(0,0,0,.45);border-left:1.4cqw solid #C0372C}
-.stage .ticket .back small{font-size:1.5cqw;color:#55666F;font-weight:600}
-.stage .ticket .back b{font-size:min(5.6cqw, 999px);font-weight:800;font-stretch:120%;line-height:1.05;color:#3B43A6;overflow-wrap:anywhere}
+.stage .slope{position:absolute;inset:0;overflow:hidden}
+.stage .rider{position:absolute;left:0;top:0;width:26cqw;transform-origin:50% 100%;will-change:transform,filter}
+.stage .rider-svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 1.2cqw 1.6cqw rgba(0,0,0,.4))}
+.stage .rider-svg g{transform-box:fill-box}
+.stage .r-armL{transform-origin:90% 95%}.stage .r-armR{transform-origin:10% 95%}.stage .r-scarf{transform-origin:20% 30%}
+.stage .sign{position:relative;margin:0 -2cqw -1.2cqw;padding:1cqw 1.2cqw 1.2cqw;background:#F4F8FF;border:.55cqw solid #C0372C;border-radius:1cqw;
+  text-align:center;box-shadow:0 .8cqw 1.6cqw rgba(0,0,0,.35);transform-origin:50% 100%}
+.stage .sign small{display:block;font-size:1.25cqw;font-weight:700;color:#fff;background:#3B43A6;border-radius:.4cqw;padding:.2cqw .6cqw;margin:0 auto .5cqw;width:max-content}
+.stage .sign b{display:block;color:#0A1620;font-weight:800;font-stretch:115%;line-height:1.05;white-space:nowrap}
+.stage .sledsolo{position:absolute;left:0;top:0;width:24cqw;transform-origin:50% 100%;will-change:transform,filter}
+.stage .sledsolo svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 1cqw 1.4cqw rgba(0,0,0,.4))}
+.stage .ramp{position:absolute;left:50%;bottom:-2cqw;width:40cqw;height:9cqw;transform:translateX(-50%);border-radius:50% 50% 0 0/100% 100% 0 0;
+  background:linear-gradient(180deg,#F4F8FF 0%,#CFDBEA 100%);opacity:.9}
+.stage .under{position:absolute;left:50%;top:0;width:76cqw;height:30cqw;z-index:6;opacity:0;border-radius:2.4cqw;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:repeating-linear-gradient(90deg,#B97A42 0 9cqw,#8C5628 9cqw 9.5cqw),linear-gradient(180deg,#C98A50,#9C6230);background-blend-mode:multiply;
+  box-shadow:0 3cqw 6cqw rgba(0,0,0,.55), inset 0 0 0 .6cqw rgba(0,0,0,.18)}
+.stage .under.on{opacity:1}
+.stage .under .runner{position:absolute;left:3cqw;right:3cqw;height:1.6cqw;border-radius:1cqw;background:linear-gradient(180deg,#5A6886,#1E2A44)}
+.stage .under .runner.a{top:2.2cqw}.stage .under .runner.b{bottom:2.2cqw}
+.stage .under small{font-size:1.8cqw;font-weight:700;color:#FFE9D6;opacity:.9}
+.stage .under b{font-weight:800;font-stretch:120%;color:#fff;line-height:1.05;white-space:nowrap;text-shadow:0 .3cqw 0 #C0372C, 0 .6cqw 1.2cqw rgba(0,0,0,.4)}
 
 /* E) Schneesturm */
 .stage .storm{position:absolute;inset:0;overflow:hidden}

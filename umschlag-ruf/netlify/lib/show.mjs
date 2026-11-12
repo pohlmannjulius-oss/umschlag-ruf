@@ -2,7 +2,11 @@
 import { randomInt } from "node:crypto";
 import { newId } from "./tombola.mjs";
 
-const DEMO = ["Lena Hoffmann", "Jonas Becker", "Mia Schulte", "Lukas Wagner", "Emma Krüger", "Felix Brandt", "Hannah Vogel", "Paul Neumann", "Sophie Lange", "Tim Hartmann", "Clara Winter", "Noah Fischer"];
+const DEMO = ["Lena Hoffmann", "Jonas Becker", "Mia Schulte", "Lukas Wagner", "Emma Krüger", "Felix Brandt", "Hannah Vogel", "Paul Neumann",
+  "Sophie Lange", "Tim Hartmann", "Clara Winter", "Noah Fischer", "Lea Schröder", "Ben Richter", "Marie Wolf", "Elias Koch", "Anna Schäfer",
+  "Leon Bauer", "Lina Zimmermann", "Finn Schmitz", "Laura Braun", "Max Hofmann", "Julia Krause", "David Lehmann", "Sarah König",
+  "Jan Peters", "Nele Walter", "Tom Möller", "Ida Busch", "Moritz Jansen", "Greta Kaiser", "Luca Fuchs", "Amelie Graf", "Niklas Vogt",
+  "Johanna Berger", "Erik Sommer", "Charlotte Haas", "Henri Seidel", "Frieda Engel", "Oskar Lorenz"];
 
 export const EMPTY_SHOW = { draws: [], currentId: null, playKey: null };
 
@@ -27,8 +31,8 @@ export function buildPool(state, mapping, { test = false } = {}) {
       const people = String(m.people || "").split(",").map((x) => x.trim()).filter(Boolean);
       (people.length ? people : [m.name]).forEach((n, i) => pool.push({ key: `${code}#${i}`, name: fullName(n), code, nr: m.nr ?? null }));
     }
-    // Ohne Nummernliste: Beispielnamen, damit die Animation trotzdem getestet werden kann
-    if (!pool.length) DEMO.forEach((n, i) => pool.push({ key: `DEMO#${i}`, name: n, code: "TEST", nr: null }));
+    // Testlostopf immer gut füllen: Nummernliste + Beispielnamen
+    DEMO.forEach((n, i) => pool.push({ key: `DEMO#${i}`, name: n, code: "TEST", nr: null }));
     return pool;
   }
   for (const o of Object.values(state.orders || {})) {
@@ -40,7 +44,7 @@ export function buildPool(state, mapping, { test = false } = {}) {
   return pool;
 }
 
-export const ANIMS = ["piste", "gondel", "tafel", "yeti", "sturm"];
+export const ANIMS = ["piste", "gondel", "tafel", "yeti", "sturm", "schlitten"];
 
 export function drawFrom(show, pool, { prize = "", prizeId = null, unique = true, test = false, anim = "auto" }) {
   show = { ...structuredClone(EMPTY_SHOW), ...show };

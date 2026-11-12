@@ -63,6 +63,9 @@ const SFX = (() => {
       noise({ dur: .016, f: rnd(2600, 4200), q: 5, vol: .2 }); osc({ f: rnd(150, 210), dur: .025, type: "square", vol: .04 }); },
     creak: () => osc({ f: rnd(300, 360), f2: rnd(220, 260), dur: .5, type: "sawtooth", vol: .025, a: .12 }),
     bell: () => { [[880, 1], [1318, .45], [2217, .2]].forEach(([f, v]) => { osc({ f, dur: 2.4, vol: .2 * v, a: .002 }); osc({ at: .5, f: f * .841, dur: 2.6, vol: .18 * v, a: .002 }); }); },
+    jingle: () => { const f = rnd(2600, 4200); osc({ f, dur: .14, vol: .035, a: .002 }); osc({ f: f * 1.5, dur: .1, vol: .015, a: .002 }); },
+    boing: () => { osc({ f: 260, f2: 780, dur: .28, type: "triangle", vol: .22 }); osc({ at: .16, f: 520, f2: 1040, dur: .3, type: "triangle", vol: .16 }); },
+    slowmo: () => { osc({ f: 180, f2: 55, dur: 2.6, type: "sine", vol: .35, a: .05 }); noise({ dur: 3, f: 500, f2: 120, q: .7, vol: .25, a: .3 }); osc({ at: .1, f: 70, f2: 50, dur: 2.8, type: "triangle", vol: .2, a: .4 }); },
     chime: () => [1568, 2093, 2637, 3136, 4186].forEach((f, i) => osc({ at: i * .06, f, dur: 1, vol: .07, a: .003 })),
     drumroll: (dur) => { let t = 0, gap = .1; while (t < dur) { noise({ at: t, dur: .05, f: 1700, q: .7, vol: .05 + .14 * (t / dur) }); t += gap; gap = Math.max(.032, gap * .965); } },
     roar: () => { const c = ctx(); if (!c) return; const t = c.currentTime;
@@ -234,7 +237,7 @@ function renderStage() {
   keptSceneFor = null;
   setHtml("stageMain", d ? stageResult(d) : stageIdle());
 }
-const ANIM_TXT = { piste: "Pisten-Walze", gondel: "Bergfahrt", tafel: "Anzeigetafel", yeti: "Yeti", sturm: "Schneesturm" };
+const ANIM_TXT = { piste: "Pisten-Walze", gondel: "Bergfahrt", tafel: "Anzeigetafel", yeti: "Yeti", sturm: "Schneesturm", schlitten: "Schlitten" };
 
 /* ---------------------------------------------------------- Ablauf einer Ziehung */
 async function playDraw(d) {
@@ -256,7 +259,7 @@ async function playDraw(d) {
   await sleep(180);
 
   let keep = false;
-  try { keep = await ({ piste: runPiste, gondel: runGondel, tafel: runTafel, yeti: runYeti, sturm: runSturm }[d.anim] || runPiste)(d, main); }
+  try { keep = await ({ piste: runPiste, gondel: runGondel, tafel: runTafel, yeti: runYeti, sturm: runSturm, schlitten: runSchlitten }[d.anim] || runPiste)(d, main); }
   catch (e) { console.error(e); }
   finishDraw(d, keep);
 }
@@ -265,7 +268,7 @@ function finishDraw(d, keep = false) {
   const main = $("stageMain");
   if (keep) { main.insertAdjacentHTML("beforeend", `<div class="overlay-result ${keep === "center" ? "center" : ""}">${resultExtras(d)}</div>`); keptSceneFor = d.id; }
   else { main.innerHTML = stageResult(d); htmlCache.stageMain = main.innerHTML; }
-  if (!reduceMotion) { const w = main.querySelector(".winner, .ticket, .stuck"); const p = w ? posIn(w) : { x: fxW * .42, y: fxH * .5 }; confetti(p.x, p.y); }
+  if (!reduceMotion) { const w = main.querySelector(".winner, .sign, .stuck"); const p = w ? posIn(w) : { x: fxW * .42, y: fxH * .5 }; confetti(p.x, p.y); }
   SFX.fanfare();
   stagePlaying = false; watchStart = 0; $("drawBtn").disabled = $("testDrawBtn").disabled = false; poolAt = 0; refreshPool();
   $("armBtn").hidden = !(d.prizeId && !d.test);
@@ -369,7 +372,7 @@ async function runTafel(d, main) {
   return false;
 }
 
-/* ---------------------------------------------------------- D) Yeti */
+/* ---------------------------------------------------------- D) Yeti auf dem Schlitten */
 function furPath(cx, cy, rx, ry, tufts, depth, rot = 0) {
   let dPath = "";
   for (let i = 0; i <= tufts; i++) {
@@ -380,108 +383,131 @@ function furPath(cx, cy, rx, ry, tufts, depth, rot = 0) {
   }
   return dPath + "Z";
 }
-function yetiSVG() {
-  const fur = "#F3F7FC", shade = "#CFDBEA", skin = "#A9C1E3", deep = "#2B3A66";
-  return `<svg class="yeti-svg" viewBox="0 0 320 400" aria-hidden="true">
-    <defs><linearGradient id="lens" x1="0" x2="1"><stop offset="0" stop-color="#3B43A6"/><stop offset=".55" stop-color="#5FA8E8"/><stop offset="1" stop-color="#C9F0FF"/></linearGradient></defs>
-    <ellipse cx="160" cy="392" rx="96" ry="10" fill="rgba(0,0,0,.35)"/>
-    <g class="y-legL"><path d="${furPath(122, 322, 34, 54, 11, .18)}" fill="${shade}"/><ellipse cx="114" cy="376" rx="42" ry="16" fill="#B7C7DC"/></g>
-    <g class="y-legR"><path d="${furPath(198, 322, 34, 54, 11, .18, .3)}" fill="${shade}"/><ellipse cx="206" cy="376" rx="42" ry="16" fill="#B7C7DC"/></g>
-    <path d="${furPath(166, 248, 108, 116, 26, .12, .2)}" fill="${shade}"/>
-    <path d="${furPath(160, 240, 104, 114, 26, .12)}" fill="${fur}"/>
-    <ellipse cx="160" cy="268" rx="62" ry="72" fill="#E4EDF7"/>
-    <g class="y-armL"><path d="${furPath(58, 250, 30, 66, 12, .2, .4)}" fill="${fur}"/><ellipse cx="50" cy="312" rx="23" ry="19" fill="${skin}"/></g>
-    <g class="y-armR"><path d="${furPath(262, 250, 30, 66, 12, .2, .1)}" fill="${fur}"/><ellipse cx="270" cy="312" rx="23" ry="19" fill="${skin}"/></g>
-    <path d="${furPath(160, 122, 80, 70, 20, .14, .1)}" fill="${fur}"/>
-    <path d="M108 132 Q108 92 160 92 Q212 92 212 132 Q212 176 160 178 Q108 176 108 132Z" fill="${skin}"/>
-    <g class="y-eyes"><ellipse cx="138" cy="126" rx="11" ry="12" fill="#fff"/><ellipse cx="182" cy="126" rx="11" ry="12" fill="#fff"/>
-      <circle class="pup" cx="140" cy="129" r="5.5" fill="#0A1620"/><circle class="pup" cx="180" cy="129" r="5.5" fill="#0A1620"/>
-      <circle cx="142" cy="126" r="1.8" fill="#fff"/><circle cx="182" cy="126" r="1.8" fill="#fff"/></g>
-    <path class="y-brow" d="M124 108 L150 113 M196 108 L170 113" stroke="${deep}" stroke-width="5" stroke-linecap="round"/>
-    <ellipse cx="160" cy="146" rx="9" ry="6" fill="#5E77A8"/>
-    <g class="y-mouth"><path d="M138 160 Q160 176 182 160 Q160 168 138 160Z" fill="#2B1E3A"/><path d="M146 162 l3 -7 l3 8Z M168 162 l3 -8 l3 7Z" fill="#fff"/></g>
-    <path d="M90 100 Q92 30 160 26 Q228 30 230 100Z" fill="#C0372C"/>
-    <path d="M88 92 Q160 76 232 92 L232 108 Q160 92 88 108Z" fill="#A32C23"/>
-    <path d="M100 66 Q160 52 220 66" stroke="#fff" stroke-width="7" fill="none" opacity=".9"/>
-    <circle cx="160" cy="24" r="17" fill="#fff"/><circle cx="154" cy="18" r="6" fill="#F3F7FC"/>
-    <path d="M96 78 Q160 66 224 78" stroke="#0A1620" stroke-width="8" fill="none" opacity=".75"/>
-    <rect x="126" y="62" width="68" height="28" rx="14" fill="#0A1620"/><rect x="130" y="65" width="60" height="22" rx="11" fill="url(#lens)"/>
-    <path d="M138 70 L150 70" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+// Schlitten von vorn (fährt auf die Kamera zu): rot, blaue Bande, Kufen
+const SLED_FRONT = `
+  <path d="M34 300 Q22 300 22 286 L22 262 Q22 250 34 250 L266 250 Q278 250 278 262 L278 286 Q278 300 266 300Z" fill="#C0372C"/>
+  <rect x="22" y="264" width="256" height="12" fill="#3B43A6"/>
+  <rect x="22" y="252" width="256" height="5" fill="#fff" opacity=".35"/>
+  <path d="M46 300 Q46 322 70 322 L84 322" stroke="#0A1620" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M254 300 Q254 322 230 322 L216 322" stroke="#0A1620" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <circle cx="46" cy="252" r="9" fill="#0A1620"/><circle cx="254" cy="252" r="9" fill="#0A1620"/>`;
+// Fröhlicher Yeti in INTERSPORT-Farben: blaue Jacke, roter Schal, rote Mütze – sitzt im Schlitten, Arme hoch
+function yetiRiderSVG() {
+  const fur = "#F4F8FF", shade = "#C9DAF0", skin = "#BFD3F0", blue = "#3B43A6", red = "#C0372C";
+  return `<svg class="rider-svg" viewBox="0 0 300 330" aria-hidden="true">
+    <defs><linearGradient id="lens2" x1="0" x2="1"><stop offset="0" stop-color="#3B43A6"/><stop offset=".55" stop-color="#5FA8E8"/><stop offset="1" stop-color="#D8F4FF"/></linearGradient></defs>
+    <g class="r-armL"><path d="M96 196 Q60 120 58 26" stroke="${shade}" stroke-width="38" stroke-linecap="round" fill="none"/><path d="M96 196 Q60 120 58 26" stroke="${fur}" stroke-width="30" stroke-linecap="round" fill="none"/><circle cx="58" cy="20" r="17" fill="${skin}"/></g>
+    <g class="r-armR"><path d="M204 196 Q240 120 242 26" stroke="${shade}" stroke-width="38" stroke-linecap="round" fill="none"/><path d="M204 196 Q240 120 242 26" stroke="${fur}" stroke-width="30" stroke-linecap="round" fill="none"/><circle cx="242" cy="20" r="17" fill="${skin}"/></g>
+    <path d="${furPath(150, 214, 92, 64, 22, .12)}" fill="${shade}"/>
+    <path d="${furPath(150, 208, 88, 60, 22, .12, .2)}" fill="${fur}"/>
+    <path d="M86 268 Q84 196 112 178 L188 178 Q216 196 214 268Z" fill="${blue}"/>
+    <path d="M150 180 L150 268" stroke="${red}" stroke-width="5"/>
+    <path d="M100 205 Q150 198 200 205" stroke="#fff" stroke-width="4" fill="none" opacity=".55"/>
+    <g class="r-scarf"><path d="M104 172 Q150 192 196 172 L198 186 Q150 206 102 186Z" fill="${red}"/><path d="M178 184 Q206 204 232 196 L226 214 Q200 220 172 198Z" fill="${red}"/><path d="M226 196 l8 -4 M228 206 l9 0" stroke="#fff" stroke-width="3"/></g>
+    <path d="${furPath(150, 116, 66, 60, 20, .14, .1)}" fill="${fur}"/>
+    <ellipse cx="150" cy="124" rx="47" ry="40" fill="${skin}"/>
+    <circle cx="116" cy="138" r="9" fill="#F49A9A" opacity=".75"/><circle cx="184" cy="138" r="9" fill="#F49A9A" opacity=".75"/>
+    <g class="r-eyes"><ellipse cx="132" cy="114" rx="10" ry="12" fill="#fff"/><ellipse cx="168" cy="114" rx="10" ry="12" fill="#fff"/>
+      <circle cx="133" cy="116" r="6.5" fill="#0A1620"/><circle cx="167" cy="116" r="6.5" fill="#0A1620"/>
+      <circle cx="135.5" cy="112.5" r="2.4" fill="#fff"/><circle cx="169.5" cy="112.5" r="2.4" fill="#fff"/></g>
+    <path d="M120 96 Q132 89 142 95 M158 95 Q168 89 180 96" stroke="#2B3A66" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="150" cy="128" rx="7" ry="5" fill="#5E77A8"/>
+    <g class="r-mouth"><path d="M128 138 Q150 170 172 138 Q150 146 128 138Z" fill="#2B1E3A"/><path d="M140 154 Q150 162 160 154 Q150 150 140 154Z" fill="#E86B6B"/><path d="M134 140 l5 6 l5 -5Z M156 141 l5 5 l5 -6Z" fill="#fff"/></g>
+    <path d="M86 96 Q88 34 150 30 Q212 34 214 96Z" fill="${red}"/>
+    <path d="M84 90 Q150 74 216 90 L216 104 Q150 90 84 104Z" fill="${blue}"/>
+    <path d="M98 64 Q150 52 202 64" stroke="#fff" stroke-width="6" fill="none" opacity=".9"/>
+    <circle cx="150" cy="28" r="15" fill="#fff"/>
+    <rect x="120" y="58" width="60" height="24" rx="12" fill="#0A1620"/><rect x="123" y="61" width="54" height="18" rx="9" fill="url(#lens2)"/>
+    ${SLED_FRONT}
   </svg>`;
 }
-const PILE = `<svg class="pile-svg" viewBox="0 0 400 140" preserveAspectRatio="none" aria-hidden="true">
-  <path d="M0 140 Q20 70 70 66 Q90 30 140 36 Q170 4 214 18 Q250 6 278 34 Q330 30 348 70 Q392 78 400 140Z" fill="#E8EFF7"/>
-  <path d="M30 140 Q60 96 120 92 Q170 70 230 78 Q300 76 340 104 Q370 116 380 140Z" fill="#CFDBEA" opacity=".7"/>
-  <circle cx="120" cy="56" r="3" fill="#fff"/><circle cx="240" cy="40" r="2.5" fill="#fff"/><circle cx="300" cy="62" r="2" fill="#fff"/></svg>`;
+const fitText = (txt, base, maxLen = 9) => Math.min(base, base * maxLen / Math.max([...txt].length, 1));
+function sledBells(on) {
+  if (sledBells.iv) clearInterval(sledBells.iv);
+  if (on) sledBells.iv = setInterval(() => { if (Math.random() < .75) SFX.jingle(); }, 115);
+}
+// Position auf der Piste: p 0 = oben weit weg, 1 = direkt vor der Kamera
+function pisteAt(box, p, zig = 1, endX = .5, endS = 1.15) {
+  const W = box.clientWidth, H = box.clientHeight;
+  const e = Math.pow(p, 1.9);
+  const x = W * (.6 + (endX - .6) * e) + Math.sin(p * Math.PI * 5) * W * .16 * e * zig;
+  const y = H * (.5 + (.97 - .5) * e);
+  const s = .06 + (endS - .06) * Math.pow(p, 2.3);
+  return { x, y, s, lean: Math.cos(p * Math.PI * 5) * 12 * zig * Math.min(1, p * 2) };
+}
 
 async function runYeti(d, main) {
-  main.innerHTML = `<div class="kicker yk">Der Yeti zieht …</div>
-    <div class="yscene"><div class="pile" id="pile">${PILE}</div><div class="yeti" id="yeti">${yetiSVG()}</div></div>
-    <div class="ticket" id="ticket"><div class="face front"><span>Glückslos</span><i></i></div><div class="face back"><small>Glückslos</small><b class="stuck">${esc(d.display || d.name)}</b></div></div>`;
-  const yeti = $("yeti"), svg = yeti.firstElementChild, pile = $("pile"), ticket = $("ticket");
-  const q = (s) => svg.querySelector(s);
-  const legL = q(".y-legL"), legR = q(".y-legR"), armL = q(".y-armL"), armR = q(".y-armR"), mouth = q(".y-mouth");
-
-  // 1) Reinstapfen
-  yeti.animate([{ transform: "translateX(-46cqw)" }, { transform: "translateX(0)" }], { duration: 3000, easing: "cubic-bezier(.3,.1,.3,1)", fill: "forwards" });
-  for (let i = 0; i < 8; i++) {
-    const L = i % 2 === 0;
-    (L ? legL : legR).animate([{ transform: "translateY(0) rotate(0)" }, { transform: "translateY(-14px) rotate(" + (L ? -10 : 10) + "deg)" }, { transform: "translateY(0) rotate(0)" }], { duration: 360, easing: "ease-in-out" });
-    svg.animate([{ transform: "translateY(0) rotate(0)" }, { transform: `translateY(-8px) rotate(${L ? -2 : 2}deg)` }, { transform: "translateY(0) rotate(0)" }], { duration: 360, easing: "ease-in-out" });
-    (L ? armR : armL).animate([{ transform: "rotate(0)" }, { transform: `rotate(${L ? 14 : -14}deg)` }, { transform: "rotate(0)" }], { duration: 360 });
-    await sleep(340);
-    SFX.thud(.45 + i * .03); shake(.22 + i * .02, 260);
-    const f = posIn(yeti, L ? .35 : .65, .97); snowPuff(f.x, f.y, 22, { power: 4, spread: Math.PI * .9 });
-    await sleep(35);
-  }
-  await sleep(250);
-
-  // 2) Brüllen
-  SFX.roar(); flicker(1100); shake(1.1, 1400); storm = .25;
-  mouth.animate([{ transform: "scale(1,1)" }, { transform: "scale(1.5,3)" }, { transform: "scale(1.5,3)" }, { transform: "scale(1,1)" }], { duration: 1700, easing: "ease-in-out" });
-  svg.animate([{ transform: "scale(1)" }, { transform: "scale(1.06) translateY(-6px)" }, { transform: "scale(1.06) translateY(-6px)" }, { transform: "scale(1)" }], { duration: 1700, easing: "ease-in-out" });
-  [armL, armR].forEach((a, i) => a.animate([{ transform: "rotate(0)" }, { transform: `rotate(${i ? -70 : 70}deg)` }, { transform: `rotate(${i ? -70 : 70}deg)` }, { transform: "rotate(0)" }], { duration: 1700, easing: "ease-in-out" }));
-  await sleep(1900); storm = 0;
-
-  // 3) Im Schneehaufen wühlen – Lose fliegen heraus
-  SFX.drumroll(3.4);
-  for (let i = 0; i < 6; i++) {
-    armR.animate([{ transform: "rotate(0)" }, { transform: "rotate(-48deg)" }, { transform: "rotate(16deg)" }, { transform: "rotate(0)" }], { duration: 560, easing: "ease-in-out" });
-    svg.animate([{ transform: "rotate(0)" }, { transform: "rotate(4deg) translateX(6px)" }, { transform: "rotate(0)" }], { duration: 560 });
-    await sleep(300);
-    SFX.crunch(); const p = posIn(pile, rnd(.3, .55), .3); snowPuff(p.x, p.y, 45, { dir: -Math.PI / 2 + .3, spread: 1.6, power: 9 });
-    for (let k = 0; k < 2; k++) slip(main, pick(d.reel.length ? d.reel : ["…"]), p);
-    await sleep(260);
-  }
-
-  // 4) Das Glückslos schießt heraus und dreht sich
-  armR.animate([{ transform: "rotate(0)" }, { transform: "rotate(-150deg)" }], { duration: 420, easing: EASE_OUT, fill: "forwards" });
-  armL.animate([{ transform: "rotate(0)" }, { transform: "rotate(130deg)" }], { duration: 420, easing: EASE_OUT, fill: "forwards" });
-  const pp = posIn(pile, .45, .25); snowPuff(pp.x, pp.y, 120, { power: 13, spread: 1.2 }); SFX.whoosh(.6, .3); SFX.chime();
-  ticket.classList.add("show");
-  await ticket.animate([
-    { transform: "translate(-30cqw, 18cqw) rotateZ(-40deg) rotateY(0deg) scale(.45)", opacity: 0 },
-    { transform: "translate(-12cqw, -10cqw) rotateZ(200deg) rotateY(0deg) scale(.8)", opacity: 1, offset: .5 },
-    { transform: "translate(0, 0) rotateZ(356deg) rotateY(0deg) scale(1)", opacity: 1 },
-  ], { duration: 1300, easing: EASE_OUT, fill: "forwards" }).finished;
-  SFX.whoosh(.35, .15);
-  await ticket.animate([{ transform: "rotateZ(-4deg) perspective(80cqw) rotateY(0deg)" }, { transform: "rotateZ(-4deg) perspective(80cqw) rotateY(90deg)" }], { duration: 300, easing: "cubic-bezier(.55,0,1,.45)", fill: "forwards" }).finished;
-  ticket.classList.add("flipped");
-  await ticket.animate([{ transform: "rotateZ(-4deg) perspective(80cqw) rotateY(-90deg)" }, { transform: "rotateZ(-4deg) perspective(80cqw) rotateY(0deg)" }], { duration: 520, easing: EASE_OUT, fill: "forwards" }).finished;
-  // Yeti jubelt weiter
-  svg.animate([{ transform: "translateY(0)" }, { transform: "translateY(-10px)" }, { transform: "translateY(0)" }], { duration: 520, iterations: 4, easing: "ease-in-out" });
+  const name = d.display || d.name;
+  main.innerHTML = `<div class="kicker yk">Der Yeti bringt den Namen …</div>
+    <div class="slope" id="slope"><div class="rider" id="rider">
+      <div class="sign" id="sign"><small>Gewonnen hat</small><b style="font-size:${fitText(name, 4.4).toFixed(2)}cqw">${esc(name)}</b></div>
+      ${yetiRiderSVG()}</div></div>`;
+  const box = $("slope"), rider = $("rider"), sign = $("sign"), svg = rider.querySelector("svg");
+  const armL = svg.querySelector(".r-armL"), armR = svg.querySelector(".r-armR"), scarf = svg.querySelector(".r-scarf");
+  const scrape = SFX.wind(); scrape.set(.05, .3); sledBells(true);
+  scarf.animate([{ transform: "rotate(0)" }, { transform: "rotate(-6deg)" }, { transform: "rotate(0)" }], { duration: 300, iterations: Infinity });
+  [armL, armR].forEach((a, i) => a.animate([{ transform: "rotate(0)" }, { transform: `rotate(${i ? 4 : -4}deg)` }, { transform: "rotate(0)" }], { duration: 420, iterations: Infinity, delay: i * 120 }));
+  let lastTurn = 0;
+  // 1) Abfahrt im Zickzack auf die Kamera zu – das Schild wird erst nah lesbar
+  await frames(9000, (p, dt, ms) => {
+    const q = pisteAt(box, p, 1, .34, .9);
+    rider.style.transform = `translate(${q.x}px,${q.y}px) translate(-50%,-100%) scale(${q.s.toFixed(4)}) rotate(${q.lean.toFixed(2)}deg)`;
+    rider.style.filter = `blur(${Math.max(0, 2.6 - p * 4).toFixed(2)}px)`;
+    scrape.set(.08 + p * .5, .12); wind = 1 + p * 3;
+    const turn = Math.floor(p * 5);
+    if (turn !== lastTurn) { lastTurn = turn; SFX.whoosh(.35, .08 + p * .2);
+      const s = posIn(rider, .5, .98); snowPuff(s.x, s.y, Math.round(10 + p * 50), { dir: -Math.PI / 2 + (turn % 2 ? .6 : -.6), spread: 1.2, power: 2 + p * 9 }); }
+  });
+  // 2) Bremsen mit Schneefontäne Richtung Kamera
+  sledBells(false); scrape.stop(.5); SFX.spray(); shake(.9, 500);
+  const s = posIn(rider, .5, .96);
+  snowPuff(s.x - fxW * .12, s.y, 160, { dir: -Math.PI / 2 - .5, spread: 1.3, power: 15 });
+  snowPuff(s.x + fxW * .12, s.y, 160, { dir: -Math.PI / 2 + .5, spread: 1.3, power: 15 });
+  const q = pisteAt(box, 1, 1, .34, .9);
+  rider.animate([{ transform: rider.style.transform }, { transform: `translate(${q.x}px,${q.y}px) translate(-50%,-100%) scale(.9) rotate(-3deg)` }, { transform: `translate(${q.x}px,${q.y}px) translate(-50%,-100%) scale(.9) rotate(0)` }], { duration: 650, easing: EASE_OUT, fill: "forwards" });
+  await sleep(700);
+  // 3) Jubel: Schild hoch, hüpfen
+  SFX.boing(); SFX.chime();
+  sign.animate([{ transform: "translateY(0) rotate(0)" }, { transform: "translateY(-8%) rotate(-3deg)" }, { transform: "translateY(0) rotate(2deg)" }, { transform: "translateY(0) rotate(0)" }], { duration: 900, easing: "ease-in-out" });
+  svg.animate([{ transform: "translateY(0)" }, { transform: "translateY(-5%)" }, { transform: "translateY(0)" }], { duration: 450, iterations: 3, easing: "ease-in-out" });
+  await sleep(1100);
   return "right";
 }
-// Fliegendes Los-Papierchen mit einem Namen
-function slip(main, txt, p) {
-  const el = document.createElement("div"); el.className = "slip"; el.textContent = txt;
-  el.style.left = p.x + "px"; el.style.top = p.y + "px"; main.appendChild(el);
-  const dx = rnd(-30, 30), up = rnd(14, 26);
-  el.animate([
-    { transform: "translate(-50%,-50%) rotate(0) scale(.7)", opacity: 0 },
-    { transform: `translate(calc(-50% + ${dx * .5}cqw), calc(-50% - ${up}cqw)) rotate(${rnd(-200, 200)}deg) scale(1)`, opacity: 1, offset: .35 },
-    { transform: `translate(calc(-50% + ${dx}cqw), calc(-50% + 12cqw)) rotate(${rnd(-500, 500)}deg) scale(.9)`, opacity: 0 },
-  ], { duration: rnd(1500, 2100), easing: "cubic-bezier(.2,.6,.4,1)", fill: "forwards" }).finished.then(() => el.remove());
+
+/* ---------------------------------------------------------- F) Schlitten über die Kamera */
+async function runSchlitten(d, main) {
+  const name = d.display || d.name;
+  main.innerHTML = `<div class="kicker yk">Schlitten frei …</div>
+    <div class="slope" id="slope"><div class="ramp"></div><div class="sledsolo" id="sled"><svg viewBox="0 220 300 110" aria-hidden="true">${SLED_FRONT}</svg></div></div>
+    <div class="under" id="under"><i class="runner a"></i><i class="runner b"></i><small>Gewonnen hat</small><b style="font-size:${fitText(name, 7.4, 10).toFixed(2)}cqw">${esc(name)}</b></div>`;
+  const box = $("slope"), sled = $("sled"), under = $("under");
+  const scrape = SFX.wind(); scrape.set(.1, .3); sledBells(true);
+  let lastTurn = 0;
+  // 1) rasante Abfahrt auf die Schanze zu
+  await frames(6200, (p) => {
+    const q = pisteAt(box, p * .9, .7);
+    sled.style.transform = `translate(${q.x}px,${q.y}px) translate(-50%,-100%) scale(${(q.s * 1.1).toFixed(4)}) rotate(${q.lean.toFixed(2)}deg)`;
+    sled.style.filter = `blur(${Math.max(0, 2 - p * 3).toFixed(2)}px)`;
+    scrape.set(.1 + p * .7, .1); wind = 1 + p * 4;
+    const turn = Math.floor(p * 4.5);
+    if (turn !== lastTurn) { lastTurn = turn; SFX.whoosh(.3, .1 + p * .2); const s = posIn(sled, .5, .95); snowPuff(s.x, s.y, 20 + p * 40, { power: 3 + p * 7, spread: 1.3 }); }
+  });
+  // 2) Absprung über die Kamera
+  sledBells(false); SFX.whoosh(.5, .4); scrape.stop(.3);
+  const s0 = posIn(sled, .5, .9); snowPuff(s0.x, s0.y, 180, { power: 14, spread: 1.4 });
+  await sled.animate([{ transform: sled.style.transform, opacity: 1 }, { transform: `translate(${box.clientWidth / 2}px,${box.clientHeight * .2}px) translate(-50%,-100%) scale(3.2) rotate(-8deg)`, opacity: 0 }], { duration: 420, easing: "cubic-bezier(.55,0,1,.45)", fill: "forwards" }).finished;
+  // 3) Zeitlupe: Unterseite fliegt über uns hinweg, darauf steht der Name
+  SFX.slowmo(); storm = 0; wind = .2; shake(.6, 300);
+  under.classList.add("on");
+  await under.animate([
+    { transform: "translate(-50%, 46cqw) rotate(-7deg) scale(.86)", filter: "blur(6px)" },
+    { transform: "translate(-50%, -2cqw) rotate(-3deg) scale(1)", filter: "blur(0)", offset: .22 },
+    { transform: "translate(-50%, -6cqw) rotate(-2deg) scale(1.02)", filter: "blur(0)", offset: .86 },
+    { transform: "translate(-50%, -64cqw) rotate(3deg) scale(1.25)", filter: "blur(5px)" },
+  ], { duration: 3600, easing: "linear", fill: "forwards" }).finished;
+  SFX.thud(.35); shake(.4, 300);
+  await sleep(350);
+  return false;
 }
 
 /* ---------------------------------------------------------- E) Schneesturm */
