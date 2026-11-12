@@ -1,4 +1,4 @@
-# Umschlag-Ruf – Einrichtung
+# Voswinkel Event-Orga – Einrichtung
 
 Ablauf am Event: Ticket wird mit pretixSCAN gescannt → pretix meldet den Check-in an die Website → das Tablet zeigt groß die Umschlagnummer, die Bestellnummer, den Namen und wie viele Personen der Bestellung schon da sind. Pro Bestellung erscheint der Umschlag nur einmal, auch wenn die ganze Familie nacheinander gescannt wird.
 
