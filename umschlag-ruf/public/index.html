@@ -105,13 +105,18 @@
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,55,44,.5)}50%{box-shadow:0 0 0 12px rgba(192,55,44,0)}}
   .winner{font-size:clamp(34px,4.4vw,54px);font-weight:800;margin-top:14px;line-height:1.1;overflow-wrap:break-word;hyphens:auto}
   .mail{font-size:22px;color:var(--slate);margin-top:6px;overflow-wrap:anywhere}
-  .prizes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:16px 20px;overflow:auto}
+  .prizes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:16px 20px;overflow:auto;flex:1;min-height:0;align-content:start}
+  .badge[hidden]{display:none!important}
   .pbtn{position:relative;background:var(--bg);border:1px solid var(--line);padding:16px 14px;text-align:left;font-size:18px;font-weight:700;color:var(--ink);min-height:74px}
   .pbtn small{display:block;font-size:14px;font-weight:500;color:var(--slate);margin-top:4px}
   .pbtn.on{background:var(--red);border-color:var(--red);color:#fff}
   .pbtn.on small{color:#fff}
   .pbtn:disabled{opacity:.45;cursor:default}
   .pbtn .x{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:8px;background:#fff;border:1px solid #F3C4BE;color:var(--red);font-size:16px;line-height:26px;text-align:center;padding:0}
+  .search{display:flex;align-items:center;gap:10px;padding:14px 20px 0}
+  .search input{flex:1;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:17px;background:var(--bg)}
+  .search input:focus{outline:2px solid var(--blue);background:#fff}
+  .search span{font-size:14px;color:var(--slate);white-space:nowrap}
   .addprize{display:flex;gap:8px;padding:0 20px 16px;flex-wrap:wrap}
   .addprize input{padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px;flex:1;min-width:140px}
   .addprize input.qty{flex:0 0 90px;min-width:0}
@@ -166,8 +171,10 @@
 <main id="viewT" hidden>
   <section class="hero" id="tHero"></section>
   <div class="side">
-    <div class="panel" style="flex:1.1">
-      <h2>Gewinne <span class="h2tools"><button id="editPrizes">Bearbeiten</button></span></h2>
+    <div class="panel" style="flex:1.8">
+      <h2>Gewinne <span class="h2tools"><button id="importPrizesBtn">Excel hochladen</button><button id="editPrizes">Bearbeiten</button></span></h2>
+      <input type="file" id="prizeFile" accept=".xlsx,.xls,.csv" hidden>
+      <div class="search"><input type="search" id="prizeSearch" placeholder="Gewinn suchen …" autocomplete="off"><span id="searchInfo"></span></div>
       <div class="prizes" id="prizes"></div>
       <form class="addprize" id="addPrize">
         <input id="prizeName" placeholder="Neuer Gewinn, z. B. Skischuhtasche" maxlength="80" autocomplete="off">
@@ -410,13 +417,22 @@ function renderTombola(){
   }
 
   $("editPrizes").textContent = editPrizes ? "Fertig" : "Bearbeiten";
-  setHtml("prizes", t.prizes.length ? t.prizes.map(p => {
+  const q = norm($("prizeSearch").value);
+  const shown = t.prizes
+    .filter(p => !q || norm(p.name).includes(q) || p.id === t.armed)
+    .map((p, i) => ({ p, i, gone: (prizeLeft(t, p) ?? 1) <= 0 }))
+    .sort((a, b) => a.gone - b.gone || a.i - b.i) // vergebene ans Ende
+    .map(x => x.p);
+  $("searchInfo").textContent = q ? `${shown.length} von ${t.prizes.length}` : t.prizes.length ? `${t.prizes.length} Gewinne` : "";
+  setHtml("prizes", !t.prizes.length ? `<div class="none" style="padding:4px">Noch keine Gewinne. Excel hochladen oder unten eintragen.</div>`
+    : !shown.length ? `<div class="none" style="padding:4px">Kein Gewinn passt zu „${esc($("prizeSearch").value)}“.</div>`
+    : shown.map(p => {
     const left = prizeLeft(t, p), gone = left !== null && left <= 0;
     return `<button class="pbtn ${p.id === t.armed ? "on" : ""}" data-arm="${esc(p.id)}" ${gone && !editPrizes ? "disabled" : ""}>
       ${esc(p.name)}<small>${left === null ? `${t.wins.filter(w => w.prizeId === p.id).length}× vergeben` : gone ? "vergeben" : `${left} von ${p.qty} übrig`}</small>
       ${editPrizes ? `<span class="x" data-rm="${esc(p.id)}" title="Löschen">✕</span>` : ""}
     </button>`;
-  }).join("") : `<div class="none" style="padding:4px">Noch keine Gewinne. Unten eintragen.</div>`);
+  }).join(""));
 
   $("winInfo").textContent = t.wins.length ? `${t.wins.filter(w => w.contacted).length}/${t.wins.length} kontaktiert` : "";
   setHtml("wins", t.wins.length ? t.wins.map(w => `
@@ -461,6 +477,54 @@ document.addEventListener("change", async (e) => {
   if (r) { await tApi({ action:"setRole", id: r.dataset.role, role: r.value }).catch(err => alert(err.message)); return poll(); }
 });
 $("editPrizes").onclick = () => { editPrizes = !editPrizes; renderTombola(); };
+
+// Suche
+function norm(s){ return String(s || "").toLocaleLowerCase("de").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss").replace(/\s+/g, " ").trim(); }
+$("prizeSearch").oninput = () => renderTombola();
+$("prizeSearch").onkeydown = async (e) => {
+  if (e.key === "Escape") { $("prizeSearch").value = ""; renderTombola(); }
+  if (e.key === "Enter") { // genau ein Treffer → direkt antippen
+    const btns = [...document.querySelectorAll("#prizes .pbtn:not(:disabled)")];
+    if (btns.length === 1) btns[0].click();
+  }
+};
+
+// Excel-Import der Gewinne
+$("importPrizesBtn").onclick = () => $("prizeFile").click();
+$("prizeFile").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type:"array" });
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:"", raw:false })
+      .filter(r => r.some(c => String(c).trim()));
+    if (!aoa.length) throw new Error("Die Datei ist leer.");
+    const head = aoa[0].map(h => norm(h));
+    let cName = head.findIndex(h => /^(gewinn|gewinne|preis|preise|artikel|produkt|bezeichnung|name|sachpreis)/.test(h));
+    let cQty = head.findIndex(h => /(anzahl|menge|stuck|stk|qty|anz)/.test(h));
+    let rows = aoa.slice(1);
+    if (cName < 0) {
+      // keine erkennbare Überschrift: erste Spalte mit Text nehmen, erste Zeile mitzählen
+      const textCol = aoa[0].findIndex(c => isNaN(parseInt(c)) && String(c).trim());
+      if (cQty < 0) rows = aoa;
+      cName = textCol < 0 ? 0 : textCol;
+    }
+    const sum = new Map();
+    for (const r of rows) {
+      const name = String(r[cName] ?? "").trim(); if (!name) continue;
+      const qty = cQty >= 0 ? parseInt(r[cQty]) || 1 : 1;
+      const k = norm(name);
+      sum.set(k, { name: sum.get(k)?.name || name, qty: (sum.get(k)?.qty || 0) + qty });
+    }
+    const prizes = [...sum.values()];
+    if (!prizes.length) throw new Error("Keine Gewinne gefunden. Erste Spalte: Gewinn, zweite Spalte: Anzahl.");
+    const replace = state.tombola?.prizes?.length
+      ? confirm(`${prizes.length} Gewinne gefunden (${prizes.reduce((s, p) => s + p.qty, 0)} Stück), z. B. ${prizes.slice(0, 3).map(p => p.name).join(", ")}.\n\nOK = bisherige Gewinnliste ersetzen (schon vergebene bleiben erhalten)\nAbbrechen = zur bestehenden Liste hinzufügen`)
+      : false;
+    const r = await tApi({ action:"importPrizes", prizes, replace });
+    alert(`Übernommen: ${r.added} neu, ${r.updated} aktualisiert${r.removed ? `, ${r.removed} entfernt` : ""}.`);
+  } catch (err) { alert("Datei konnte nicht übernommen werden: " + err.message); }
+  poll();
+};
 $("addPrize").onsubmit = async (e) => {
   e.preventDefault();
   const name = $("prizeName").value.trim(); if (!name) return;

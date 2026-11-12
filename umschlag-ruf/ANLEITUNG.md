@@ -86,7 +86,7 @@ Bei mehreren Zeilen pro Bestellung (eine Zeile pro Ticket) wird automatisch zusa
 
 1. In pretix im Event eine zweite Check-in-Liste anlegen und **„Tombola“** nennen (*Event → Check-in → Check-in-Listen → Neue Liste*). Alle Produkte auswählen.
 2. Das pretix-Team braucht das Recht **Bestellungen ansehen** (hat es schon). Der Webhook muss nicht geändert werden.
-3. Auf der Seite im Reiter **Tombola** die Gewinne eintragen (Name, optional Anzahl).
+3. Auf der Seite im Reiter **Tombola** die Gewinne eintragen (Name, optional Anzahl) – oder per **Excel hochladen** alle auf einmal: erste Spalte „Gewinn“, zweite Spalte „Anzahl“. Gleichnamige Gewinne werden zusammengeführt. Über das Suchfeld findest du einen Gewinn schnell; bei genau einem Treffer schaltet Enter ihn scharf.
 4. Ablauf: Gewinn antippen → in pretixSCAN die Liste **Tombola** wählen → Ticket des Gewinners scannen → Name, E-Mail und Gewinn erscheinen und landen in der Gewinnerliste.
 5. Wird ohne angetippten Gewinn gescannt, steht der Gewinner mit „Gewinn fehlt“ in der Liste und kann nachträglich zugeordnet werden.
 6. Nach dem Event: **CSV exportieren** (öffnet sich in Excel), dann unter *Einstellungen → Gewinner löschen*.

@@ -18,6 +18,31 @@ export default async (req) => {
       await T((t) => { t.prizes.push({ id: newId(), name, qty }); return t; });
       return json({ ok: true });
     }
+    case "importPrizes": {
+      const rows = (Array.isArray(b.prizes) ? b.prizes : [])
+        .map((r) => ({ name: String(r.name || "").trim().slice(0, 80), qty: parseInt(r.qty) > 0 ? parseInt(r.qty) : null }))
+        .filter((r) => r.name).slice(0, 1000);
+      if (!rows.length) return json({ error: "Keine Gewinne in der Datei gefunden" }, 400);
+      let added = 0, updated = 0, removed = 0;
+      await T((t) => {
+        const key = (s) => s.toLocaleLowerCase("de").replace(/\s+/g, " ");
+        const inFile = new Set(rows.map((r) => key(r.name)));
+        if (b.replace) {
+          const before = t.prizes.length;
+          // Gewinne, die schon vergeben wurden, bleiben erhalten
+          t.prizes = t.prizes.filter((p) => inFile.has(key(p.name)) || t.wins.some((w) => w.prizeId === p.id));
+          removed = before - t.prizes.length;
+          if (t.armed && !t.prizes.some((p) => p.id === t.armed)) t.armed = null;
+        }
+        for (const r of rows) {
+          const p = t.prizes.find((x) => key(x.name) === key(r.name));
+          if (p) { if (p.qty !== r.qty) { p.qty = r.qty; updated++; } }
+          else { t.prizes.push({ id: newId(), name: r.name, qty: r.qty }); added++; }
+        }
+        return t;
+      });
+      return json({ ok: true, added, updated, removed });
+    }
     case "removePrize":
       await T((t) => { t.prizes = t.prizes.filter((p) => p.id !== b.id); if (t.armed === b.id) t.armed = null; return t; });
       return json({ ok: true });
