@@ -118,3 +118,12 @@ Unter *Einstellungen → 4. Check-in-Listen* siehst du, welche Liste wohin gehö
 - Fünf Animationen mit eigenem Sound: Pisten-Walze (Ski-Stopp mit Schneespray), Bergfahrt (Gondeln, Stationsglocke), Anzeigetafel (Fallblatt), Yeti auf dem Schlitten (fährt mit Namensschild auf die Kamera zu), Schlitten über die Kamera (Name auf der Unterseite), Schneesturm (Namen wirbeln, einer klatscht an den Bildschirm) – standardmäßig abwechselnd, fest wählbar.
 - Ziehung startet auf allen Geräten gleichzeitig: Tablet bedienen, Beamer zeigt.
 - „Gewinn in Tombola bereitlegen“: Wenn der Gewinner am Stand ist, Ticket auf der Tombola-Liste scannen → Name/E-Mail landen in der Gewinnerliste.
+
+## Getränke (Reiter „Getränke“)
+
+1. In pretix im Event eine Check-in-Liste „Getränke“ anlegen (Name mit „Getränk“, „Kaffee“, „Glühwein“ o. ä. wird automatisch erkannt).
+2. Bei dieser Liste **„Mehrfachen Eintritt erlauben“** einschalten – sonst lehnt pretixSCAN den 2. Scan selbst ab und die Seite bekommt nichts mit.
+3. Am Getränkestand pretixSCAN auf die Liste „Getränke“ stellen und den Reiter **Getränke** öffnen (`…/#getraenke`).
+4. Jeder Scan = ein Heißgetränk: 1. Scan grün „1 von 2“, 2. Scan orange „2 von 2 – letztes Getränk“, ab dem 3. Scan rot „Schon 2 abgeholt“ mit Uhrzeiten.
+5. Gezählt wird pro Ticket (jede Person einer Familie hat ihre eigenen 2). Anzahl pro Ticket im Reiter änderbar.
+6. Versehentlich gescannt? In pretix den Check-in zurücknehmen – das Getränk wird wieder gutgeschrieben.

@@ -4,6 +4,7 @@ import { EMPTY_TOMBOLA, applyTombolaScan, newId, prizeLeft } from "../lib/tombol
 import { EMPTY_CONFIG, ROLES, fetchLists, guessRole } from "../lib/pretix.mjs";
 import { EMPTY_GOODIE, applyGoodieScan } from "../lib/goodie.mjs";
 import { EMPTY_SHOW, buildPool, drawFrom } from "../lib/show.mjs";
+import { EMPTY_DRINKS, applyDrinkScan } from "../lib/drinks.mjs";
 import { EMPTY_STATE } from "../lib/store.mjs";
 
 const T = (fn) => update("tombola", EMPTY_TOMBOLA, (t) => fn({ ...structuredClone(EMPTY_TOMBOLA), ...t }));
@@ -135,6 +136,25 @@ export default async (req) => {
       return json({ ok: true });
     case "goodieReset":
       await G((g) => ({ ...g, used: [], draws: [], lastDrawId: null }));
+      return json({ ok: true });
+
+    // ---- Getränke ----
+    case "drinksLimit": {
+      const limit = parseInt(b.limit);
+      if (!(limit >= 1 && limit <= 20)) return json({ error: "Anzahl zwischen 1 und 20" }, 400);
+      await update("drinks", EMPTY_DRINKS, (dr) => ({ ...dr, limit }));
+      return json({ ok: true });
+    }
+    case "drinksTest": {
+      const code = String(b.code || "").trim().toUpperCase();
+      if (!code) return json({ error: "Bestellnummer fehlt" }, 400);
+      const { data: mapping } = await readJSON("mapping", { rows: {} });
+      const m = mapping.rows?.[code] || {};
+      await update("drinks", EMPTY_DRINKS, (dr) => applyDrinkScan(dr, { code, nr: m.nr, name: m.name || "Testscan", test: true, revert: !!b.revert }));
+      return json({ ok: true });
+    }
+    case "drinksReset":
+      await update("drinks", EMPTY_DRINKS, (dr) => ({ ...structuredClone(EMPTY_DRINKS), limit: dr.limit || 2 }));
       return json({ ok: true });
 
     // ---- Bühne ----

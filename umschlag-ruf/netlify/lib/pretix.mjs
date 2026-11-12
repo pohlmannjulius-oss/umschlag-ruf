@@ -24,10 +24,11 @@ export async function fetchList(org, event, id) {
 }
 
 export const EMPTY_CONFIG = { lists: {}, events: {} };
-export const ROLES = ["umschlag", "tombola", "goodie", "ignorieren"];
+export const ROLES = ["umschlag", "tombola", "goodie", "getraenke", "ignorieren"];
 
 // Rolle aus dem Listennamen raten
 export function guessRole(name) {
+  if (/getr(ä|ae)nk|drink|glühwein|gluehwein|kaffee|heiß|heiss|punsch/i.test(name || "")) return "getraenke";
   if (/goodie|zusatz|lostrommel|zufall/i.test(name || "")) return "goodie";
   return /tombola|verlosung|gewinn/i.test(name || "") ? "tombola" : null;
 }

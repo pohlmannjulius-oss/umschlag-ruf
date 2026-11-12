@@ -164,6 +164,23 @@
   .draws .row .n{font-size:30px}
   .draws .row.win .n{color:var(--red)}
 
+  /* ---------- Getränke ---------- */
+  .dhero{transition:background .3s ease, border-color .3s ease}
+  .dhero.d-ok{background:#EAF6EF;border-color:#9FD3B5}
+  .dhero.d-last{background:#FFF4E2;border-color:#F2C98A}
+  .dhero.d-no{background:#FCECEA;border-color:#F3C4BE}
+  .dhero .dbig{font-size:clamp(64px,10vw,128px);line-height:.95;font-weight:800;font-stretch:80%;margin:10px 0 6px;color:var(--ok)}
+  .dhero.d-last .dbig{color:#A35F00}
+  .dhero.d-no .dbig{color:var(--red);font-size:clamp(48px,7vw,92px)}
+  #dResetBtn{white-space:nowrap}
+  .dhero .ddots{display:flex;gap:12px;margin:8px 0 10px}
+  .dhero .ddots i{width:44px;height:44px;border-radius:50%;border:3px solid currentColor;color:var(--slate);opacity:.35}
+  .dhero .ddots i.on{background:currentColor;opacity:1}
+  .dhero.d-ok .ddots i{color:var(--ok)}.dhero.d-last .ddots i{color:#A35F00}.dhero.d-no .ddots i{color:var(--red)}
+  .dhero .dsub{font-size:22px;color:var(--ink);font-weight:600}
+  .dcount{font-size:26px!important;color:var(--ok)!important}
+  .dcount.last{color:#A35F00!important}.dcount.no{color:var(--red)!important}
+
   /* ---------- Bühne ---------- */
   #viewS{display:flex;flex-direction:column;gap:16px;padding:20px 24px;height:auto;min-height:calc(100% - 64px)}
   #viewS[hidden]{display:none}
@@ -274,12 +291,17 @@
     <button data-tab="U" class="on">Umschläge<span class="badge" id="badgeU" hidden></span></button>
     <button data-tab="T">Tombola<span class="badge" id="badgeT" hidden></span></button>
     <button data-tab="G">Goodies<span class="badge" id="badgeG" hidden></span></button>
+    <button data-tab="D">Getränke</button>
     <button data-tab="S">Bühne</button>
   </nav>
   <div class="status"><span class="dot off" id="dot"></span><span id="statusText">verbinde …</span></div>
   <div class="counts" id="countsU">
     <div><b id="cOpen">0</b> offen</div>
     <div><b id="cDone">0</b> ausgegeben</div>
+  </div>
+  <div class="counts" id="countsD" hidden>
+    <div><b id="dServed">0</b> ausgegeben</div>
+    <div><b id="dDenied">0</b> abgewiesen</div>
   </div>
   <div class="counts" id="countsS" hidden>
     <div><b id="sPool">–</b> im Lostopf</div>
@@ -332,6 +354,21 @@
     <div class="panel draws" style="flex:1">
       <h2>Ziehungen <span class="h2tools"><span id="gDrawInfo"></span><button id="gExportBtn">CSV exportieren</button></span></h2>
       <div class="queue" id="gDraws"></div>
+    </div>
+  </div>
+</main>
+
+<main id="viewD" hidden>
+  <section class="hero dhero" id="dHero"></section>
+  <div class="side">
+    <div class="panel" style="flex:1">
+      <h2>Letzte Scans <span id="dFeedInfo"></span></h2>
+      <div class="queue" id="dFeed"></div>
+    </div>
+    <div class="panel" style="padding:16px 20px;gap:12px">
+      <form class="gtotal" id="dLimitForm" style="padding:0">Heißgetränke pro Ticket <input type="number" id="dLimit" min="1" max="20"> <button class="btn ghost" style="padding:8px 12px">Speichern</button></form>
+      <div class="gtotal" style="padding:0"><input type="text" id="dTestCode" placeholder="Bestellnummer" style="width:160px" autocapitalize="characters"><button class="btn ghost" id="dTestBtn" style="padding:8px 12px">Testscan</button><button class="btn danger" id="dResetBtn" style="padding:8px 12px;margin-left:auto">Zählung zurücksetzen</button></div>
+      <p class="hint" style="margin:0;font-size:14px;color:var(--slate)">In pretix muss bei der Liste „Getränke“ <b>„Mehrfachen Eintritt erlauben“</b> an sein – sonst lehnt der Scanner den 2. Scan selbst ab.</p>
     </div>
   </div>
 </main>
@@ -549,12 +586,12 @@ document.addEventListener("click", async (e) => {
 });
 
 // ---------- Reiter ----------
-const HASH_TAB = { "#umschlaege":"U", "#tombola":"T", "#goodies":"G", "#buehne":"S", "#show":"S" };
-let tab = HASH_TAB[location.hash] || (["T","G","S"].includes(ls.get("ur_tab")) ? ls.get("ur_tab") : "U");
+const HASH_TAB = { "#umschlaege":"U", "#tombola":"T", "#goodies":"G", "#getraenke":"D", "#buehne":"S", "#show":"S" };
+let tab = HASH_TAB[location.hash] || (["T","G","D","S"].includes(ls.get("ur_tab")) ? ls.get("ur_tab") : "U");
 function showTab(t){
   tab = t; ls.set("ur_tab", t);
   document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
-  for (const v of ["U","T","G","S"]) { $("view" + v).hidden = t !== v; $("counts" + v).hidden = t !== v; }
+  for (const v of ["U","T","G","D","S"]) { $("view" + v).hidden = t !== v; $("counts" + v).hidden = t !== v; }
   if (typeof stageVisible === "function") stageVisible(t === "S");
   renderBadges();
 }
@@ -896,14 +933,14 @@ $("gFile").onchange = async (e) => {
 };
 
 // ---------- Check-in-Listen ----------
-const ROLE_TXT = { umschlag:"Umschläge", tombola:"Tombola", goodie:"Goodie + Gewinn", ignorieren:"ignorieren", offen:"noch nicht zugeordnet" };
+const ROLE_TXT = { umschlag:"Umschläge", tombola:"Tombola", goodie:"Goodie + Gewinn", getraenke:"Getränke", ignorieren:"ignorieren", offen:"noch nicht zugeordnet" };
 function renderLists(){
   if (!$("dlg").open) return;
   const lists = state.lists || [];
   if (document.activeElement?.dataset?.role) return; // Auswahl nicht während der Bedienung neu zeichnen
   setHtml("listTable", lists.length ? `<table><tr><th>Liste</th><th>ID</th><th>gehört zu</th></tr>${lists.map(l => `
     <tr class="listrow"><td>${esc(l.name || "(Name unbekannt)")}</td><td>${esc(l.id)}</td><td>
-      <select data-role="${esc(l.id)}">${["umschlag","tombola","goodie","ignorieren"].concat(l.role === "offen" ? ["offen"] : []).map(r => `<option value="${r}" ${l.role === r ? "selected" : ""}>${ROLE_TXT[r]}</option>`).join("")}</select>
+      <select data-role="${esc(l.id)}">${["umschlag","tombola","goodie","getraenke","ignorieren"].concat(l.role === "offen" ? ["offen"] : []).map(r => `<option value="${r}" ${l.role === r ? "selected" : ""}>${ROLE_TXT[r]}</option>`).join("")}</select>
       ${l.role === "offen" ? `<span class="tag">bitte zuordnen</span>` : ""}
     </td></tr>`).join("")}</table>` : `<p>Noch keine Listen bekannt. Sobald ein Ticket gescannt wurde, erscheint die Liste hier – oder „Listen aus pretix laden“.</p>`);
 }
@@ -991,7 +1028,7 @@ async function poll(){
     const openCodes = new Set(Object.values(state.orders).filter(o => o.status === "offen").map(o => o.code));
     const fresh = seen ? [...openCodes].filter(c => !seen.has(c)) : [];
     if (state.mappingAt !== mapAt) loadMapping();
-    render(); renderTombola(); renderGoodie(); renderLists(); renderStage();
+    render(); renderTombola(); renderGoodie(); renderLists(); renderStage(); if (typeof renderDrinks === "function") renderDrinks();
     if (fresh.length) { beep(); flash("hero"); }
     seen = openCodes;
     const lw = state.tombola?.lastWinId || null;
@@ -1086,5 +1123,6 @@ $("resetBtn").onclick = async () => {
 };
 </script>
 <script src="stage.js"></script>
+<script src="drinks.js"></script>
 </body>
 </html>

@@ -4,19 +4,20 @@ import { EMPTY_TOMBOLA } from "../lib/tombola.mjs";
 import { EMPTY_CONFIG } from "../lib/pretix.mjs";
 import { EMPTY_GOODIE } from "../lib/goodie.mjs";
 import { EMPTY_SHOW } from "../lib/show.mjs";
+import { EMPTY_DRINKS } from "../lib/drinks.mjs";
 
 export default async (req) => {
   if (!checkPin(req)) return json({ error: "pin" }, 401);
 
   if (req.method === "GET") {
-    const [{ data }, { data: mapping }, { data: tombola }, { data: cfg }, { data: goodie }, { data: show }] = await Promise.all([
+    const [{ data }, { data: mapping }, { data: tombola }, { data: cfg }, { data: goodie }, { data: show }, { data: drinks }] = await Promise.all([
       readJSON("state", EMPTY_STATE), readJSON("mapping", { rows: {} }),
-      readJSON("tombola", EMPTY_TOMBOLA), readJSON("config", EMPTY_CONFIG), readJSON("goodie", EMPTY_GOODIE), readJSON("show", EMPTY_SHOW),
+      readJSON("tombola", EMPTY_TOMBOLA), readJSON("config", EMPTY_CONFIG), readJSON("goodie", EMPTY_GOODIE), readJSON("show", EMPTY_SHOW), readJSON("drinks", EMPTY_DRINKS),
     ]);
     const { seen, ...t } = { ...EMPTY_TOMBOLA, ...tombola };
     const { seen: _s, ...g } = { ...EMPTY_GOODIE, ...goodie };
     return json({
-      ...data, tombola: t, goodie: g, show: { ...EMPTY_SHOW, ...show }, lists: Object.values(cfg.lists || {}),
+      ...data, tombola: t, goodie: g, show: { ...EMPTY_SHOW, ...show }, drinks: (({ seen: _x, ...r }) => r)({ ...EMPTY_DRINKS, ...drinks }), lists: Object.values(cfg.lists || {}),
       mappingCount: Object.keys(mapping.rows || {}).length, mappingAt: mapping.updatedAt || null, now: new Date().toISOString(),
     });
   }
