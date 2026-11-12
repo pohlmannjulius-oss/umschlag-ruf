@@ -2,8 +2,10 @@
 import { readJSON, update, json, checkPin } from "../lib/store.mjs";
 import { EMPTY_TOMBOLA, applyTombolaScan, newId, prizeLeft } from "../lib/tombola.mjs";
 import { EMPTY_CONFIG, ROLES, fetchLists, guessRole } from "../lib/pretix.mjs";
+import { EMPTY_GOODIE, applyGoodieScan } from "../lib/goodie.mjs";
 
 const T = (fn) => update("tombola", EMPTY_TOMBOLA, (t) => fn({ ...structuredClone(EMPTY_TOMBOLA), ...t }));
+const G = (fn) => update("goodie", EMPTY_GOODIE, (g) => fn({ ...structuredClone(EMPTY_GOODIE), ...g }));
 
 export default async (req) => {
   if (!checkPin(req)) return json({ error: "pin" }, 401);
@@ -86,6 +88,50 @@ export default async (req) => {
     }
     case "reset":
       await T((t) => ({ ...t, wins: [], armed: null, lastWinId: null }));
+      return json({ ok: true });
+
+    // ---- Goodie + Gewinn ----
+    case "goodieImport": {
+      const slots = {};
+      for (const r of Array.isArray(b.rows) ? b.rows : []) {
+        const nr = parseInt(r.nr); if (!(nr > 0) || nr > 100000) continue;
+        const prize = String(r.prize || "").trim().slice(0, 80);
+        if (prize) slots[String(nr)] = prize;
+      }
+      const total = parseInt(b.total);
+      if (!(total > 0) || total > 100000) return json({ error: "Anzahl der Nummern (1 bis x) fehlt" }, 400);
+      await G((g) => ({ ...g, slots, total, importedAt: new Date().toISOString() }));
+      return json({ ok: true, prizes: Object.keys(slots).length, total });
+    }
+    case "goodieTotal": {
+      const total = parseInt(b.total);
+      if (!(total > 0) || total > 100000) return json({ error: "Ungültige Anzahl" }, 400);
+      await G((g) => ({ ...g, total }));
+      return json({ ok: true });
+    }
+    case "goodieTest": {
+      const code = String(b.code || "TEST").trim().toUpperCase();
+      const { data: mapping } = await readJSON("mapping", { rows: {} });
+      const m = mapping.rows?.[code] || {};
+      await G((g) => applyGoodieScan(g, { code, envNr: m.nr, name: m.name || "Testziehung", test: true }));
+      return json({ ok: true });
+    }
+    case "goodieContacted":
+      await G((g) => { const d = g.draws.find((x) => x.id === b.id); if (d) d.contacted = !!b.value; return g; });
+      return json({ ok: true });
+    case "goodieDelete":
+      await G((g) => {
+        const d = g.draws.find((x) => x.id === b.id);
+        if (d) { g.draws = g.draws.filter((x) => x.id !== b.id); if (d.nr) g.used = g.used.filter((n) => n !== d.nr); }
+        if (g.lastDrawId === b.id) g.lastDrawId = null;
+        return g;
+      });
+      return json({ ok: true });
+    case "goodieDismiss":
+      await G((g) => ({ ...g, lastDrawId: null }));
+      return json({ ok: true });
+    case "goodieReset":
+      await G((g) => ({ ...g, used: [], draws: [], lastDrawId: null }));
       return json({ ok: true });
 
     // ---- Check-in-Listen ----

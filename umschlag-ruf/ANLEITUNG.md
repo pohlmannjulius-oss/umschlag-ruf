@@ -92,3 +92,11 @@ Bei mehreren Zeilen pro Bestellung (eine Zeile pro Ticket) wird automatisch zusa
 6. Nach dem Event: **CSV exportieren** (öffnet sich in Excel), dann unter *Einstellungen → Gewinner löschen*.
 
 Unter *Einstellungen → 4. Check-in-Listen* siehst du, welche Liste wohin gehört. Listen mit „Tombola“ im Namen werden automatisch erkannt; sonst dort umstellen.
+
+## Goodies (Reiter „Goodies“)
+
+1. In pretix eine Check-in-Liste anlegen, deren Name „Goodie“ enthält (z. B. „Goodie + Gewinn“). Sie wird automatisch erkannt; sonst unter *Einstellungen → 4. Check-in-Listen* auf „Goodie + Gewinn“ stellen.
+2. Im Reiter **Goodies** → **Excel hochladen**: Spalte A Nummer, Spalte B Gewinn (leer = kein Zusatzgewinn). Danach fragt die Seite, von 1 bis wie viel gezogen wird (Anzahl Teilnehmer/Lose).
+3. Ablauf: Ticket auf der Goodie-Liste scannen → die Seite zieht eine Zufallszahl (jede Nummer nur einmal) → zeigt Gewinn oder „Leider kein Zusatzgewinn – Goodie-Bag ausgeben“.
+4. Wird dasselbe Ticket nochmal gescannt, erscheint das alte Ergebnis – keine zweite Ziehung. Wird der Check-in in pretix zurückgenommen, kommt die Nummer zurück in die Trommel.
+5. Nach dem Event: **CSV exportieren**, dann *Einstellungen → Goodie-Ziehungen löschen*.

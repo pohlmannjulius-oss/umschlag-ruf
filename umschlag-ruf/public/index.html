@@ -131,6 +131,25 @@
   .h2tools button{background:var(--bg);border:1px solid var(--line);padding:6px 12px;font-size:14px;font-weight:600;border-radius:9px;color:var(--ink)}
   .listrow select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:15px}
 
+  /* Goodies */
+  .lucky{font-size:clamp(130px,20vw,250px);line-height:.88;font-weight:800;font-stretch:80%;color:var(--blue);margin:6px 0 2px}
+  .lucky.roll{color:var(--slate);opacity:.55}
+  .lucky.hit{color:var(--red)}
+  .gresult{font-size:clamp(30px,4vw,48px);font-weight:800;line-height:1.1;margin-top:10px;overflow-wrap:break-word;hyphens:auto}
+  .gresult.win{color:var(--red)}
+  .gsub{font-size:22px;color:var(--slate);margin-top:6px}
+  .gsub b{color:var(--ink)}
+  .ginfo{display:flex;flex-wrap:wrap;gap:8px 16px;padding:12px 20px 0;font-size:15px;color:var(--slate)}
+  .ginfo b{color:var(--ink)}
+  .gtotal{display:flex;align-items:center;gap:8px;padding:10px 20px 0;font-size:15px;color:var(--slate)}
+  .gtotal input{width:96px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:16px}
+  .slots .row{grid-template-columns:70px 1fr auto;padding:8px 20px}
+  .slots .row .n{font-size:28px}
+  .slots .row.used{opacity:.5}
+  .draws .row{grid-template-columns:70px 1fr auto;padding:10px 20px}
+  .draws .row .n{font-size:30px}
+  .draws .row.win .n{color:var(--red)}
+
   /* PIN */
   .pin{position:fixed;inset:0;background:var(--blue);display:none;align-items:center;justify-content:center;z-index:10}
   .pin.show{display:flex}
@@ -154,11 +173,16 @@
   <nav class="tabs">
     <button data-tab="U" class="on">Umschläge<span class="badge" id="badgeU" hidden></span></button>
     <button data-tab="T">Tombola<span class="badge" id="badgeT" hidden></span></button>
+    <button data-tab="G">Goodies<span class="badge" id="badgeG" hidden></span></button>
   </nav>
   <div class="status"><span class="dot off" id="dot"></span><span id="statusText">verbinde …</span></div>
   <div class="counts" id="countsU">
     <div><b id="cOpen">0</b> offen</div>
     <div><b id="cDone">0</b> ausgegeben</div>
+  </div>
+  <div class="counts" id="countsG" hidden>
+    <div><b id="gDrawn">0</b> gezogen</div>
+    <div><b id="gWinsLeft">0</b> Gewinne offen</div>
   </div>
   <div class="counts" id="countsT" hidden>
     <div><b id="cWins">0</b> Gewinner</div>
@@ -185,6 +209,24 @@
     <div class="panel wins" style="flex:1">
       <h2>Gewinner <span class="h2tools"><span id="winInfo"></span><button id="exportBtn">CSV exportieren</button></span></h2>
       <div class="queue" id="wins"></div>
+    </div>
+  </div>
+</main>
+
+<main id="viewG" hidden>
+  <section class="hero" id="gHero"></section>
+  <div class="side">
+    <div class="panel slots" style="flex:1.2">
+      <h2>Nummern &amp; Gewinne <span class="h2tools"><button id="gImportBtn">Excel hochladen</button><button id="gTestBtn">Testziehung</button></span></h2>
+      <input type="file" id="gFile" accept=".xlsx,.xls,.csv" hidden>
+      <div class="ginfo" id="gInfo"></div>
+      <form class="gtotal" id="gTotalForm">Zufallszahl von 1 bis <input type="number" id="gTotal" min="1"> <button class="btn ghost" style="padding:8px 12px">Speichern</button></form>
+      <div class="search"><input type="search" id="gSearch" placeholder="Nummer oder Gewinn suchen …" autocomplete="off"><span id="gSearchInfo"></span></div>
+      <div class="queue" id="gSlots"></div>
+    </div>
+    <div class="panel draws" style="flex:1">
+      <h2>Ziehungen <span class="h2tools"><span id="gDrawInfo"></span><button id="gExportBtn">CSV exportieren</button></span></h2>
+      <div class="queue" id="gDraws"></div>
     </div>
   </div>
 </main>
@@ -245,8 +287,8 @@
     <p class="msg" id="tTestMsg"></p>
 
     <h3>Zurücksetzen</h3>
-    <p>„Umschläge zurücksetzen“ leert Warteschlange und Ticker, die Nummernliste bleibt. „Gewinner löschen“ leert die Gewinnerliste, die Gewinne bleiben. Vorher die Gewinner als CSV exportieren!</p>
-    <div class="field"><button class="btn danger" id="resetBtn">Umschläge zurücksetzen</button><button class="btn danger" id="tResetBtn">Gewinner löschen</button></div>
+    <p>„Umschläge zurücksetzen“ leert Warteschlange und Ticker, die Nummernliste bleibt. „Gewinner löschen“ leert die Gewinnerliste, die Gewinne bleiben. „Goodie-Ziehungen löschen“ legt alle Nummern zurück in die Trommel, die Nummernliste bleibt. Vorher die Gewinner als CSV exportieren!</p>
+    <div class="field"><button class="btn danger" id="resetBtn">Umschläge zurücksetzen</button><button class="btn danger" id="tResetBtn">Gewinner löschen</button><button class="btn danger" id="gResetBtn">Goodie-Ziehungen löschen</button></div>
   </div>
 </dialog>
 
@@ -355,12 +397,11 @@ document.addEventListener("click", async (e) => {
 });
 
 // ---------- Reiter ----------
-let tab = ls.get("ur_tab") === "T" ? "T" : "U";
+let tab = ["T","G"].includes(ls.get("ur_tab")) ? ls.get("ur_tab") : "U";
 function showTab(t){
   tab = t; ls.set("ur_tab", t);
   document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
-  $("viewU").hidden = t !== "U"; $("viewT").hidden = t !== "T";
-  $("countsU").hidden = t !== "U"; $("countsT").hidden = t !== "T";
+  for (const v of ["U","T","G"]) { $("view" + v).hidden = t !== v; $("counts" + v).hidden = t !== v; }
   renderBadges();
 }
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
@@ -373,6 +414,10 @@ function renderBadges(){
   const missing = (t.wins || []).filter(w => !w.prizeId).length;
   $("badgeU").hidden = tab === "U" || !open; $("badgeU").textContent = open;
   $("badgeT").hidden = tab === "T" || !(missing || t.armed); $("badgeT").textContent = missing || "•";
+  const g = state.goodie || {};
+  const fresh = g.lastDrawId && g.lastDrawId !== gSeenOnTab;
+  $("badgeG").hidden = tab === "G" || !fresh; $("badgeG").textContent = "•";
+  if (tab === "G") gSeenOnTab = g.lastDrawId;
 }
 
 // ---------- Tombola ----------
@@ -541,15 +586,169 @@ $("exportBtn").onclick = () => {
   a.download = `Tombola-Gewinner_${new Date().toISOString().slice(0,10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
 
+// ---------- Goodie + Gewinn ----------
+let gSeenOnTab = null, gShowSeen, gRollUntil = 0, gRollTimer = null;
+const gApi = (body) => tApi(body);
+
+function renderGoodie(){
+  const g = state.goodie || { slots:{}, total:0, used:[], draws:[] };
+  const slots = Object.entries(g.slots || {}).map(([nr, prize]) => ({ nr: +nr, prize })).sort((a, b) => a.nr - b.nr);
+  const used = new Set(g.used || []);
+  const prizesLeft = slots.filter(x => x.nr <= g.total && !used.has(x.nr)).length;
+  const poolLeft = Math.max(0, g.total - (g.used || []).length);
+  $("gDrawn").textContent = (g.draws || []).filter(d => d.nr).length; $("gWinsLeft").textContent = prizesLeft;
+
+  // neue Ziehung erkannt → Zahl rollen lassen
+  if (gShowSeen !== undefined && g.lastShowKey && g.lastShowKey !== gShowSeen) startRoll(g);
+  gShowSeen = g.lastShowKey || null;
+
+  const last = (g.draws || []).find(d => d.id === g.lastDrawId);
+  const rolling = Date.now() < gRollUntil;
+  const h = $("gHero");
+  if (rolling) {
+    setHtml("gHero", `<div class="label">Ziehung läuft …</div><div class="lucky roll" id="rollNr">${Math.max(1, Math.ceil(Math.random() * (g.total || 99)))}</div>
+      <div class="gsub">${esc(last?.name || "")}</div>`);
+  } else if (last) {
+    const again = last.shownAgainAt && g.lastShowKey !== last.id;
+    setHtml("gHero", `
+      <div class="label">${last.empty ? "Trommel ist leer" : "Glückszahl"}</div>
+      ${last.nr ? `<div class="lucky ${last.prize ? "hit" : ""}">${last.nr}</div>` : ""}
+      ${last.prize
+        ? `<div class="gresult win">Gewonnen: ${esc(last.prize)}</div><div class="gsub">plus <b>Goodie-Bag</b></div>`
+        : `<div class="gresult">${last.empty ? "Alle Nummern sind gezogen" : "Leider kein Zusatzgewinn"}</div><div class="gsub"><b>Goodie-Bag</b> ausgeben</div>`}
+      <div class="name" style="font-size:28px;margin-top:18px">${esc(last.name || "Name unbekannt")}</div>
+      <div class="meta">
+        <span class="pill code">${esc(last.code)}</span>
+        ${last.envNr ? `<span class="pill">Umschlag ${esc(last.envNr)}</span>` : ""}
+        <span class="pill">${time(last.t)}</span>
+        ${again ? `<span class="pill warn">Ticket hat schon gezogen – keine neue Ziehung</span>` : ""}
+        ${last.note ? `<span class="pill warn">${esc(last.note)}</span>` : ""}
+        ${last.test ? `<span class="pill">Testziehung</span>` : ""}
+      </div>
+      <div class="actions"><button class="big" data-g="goodieDismiss">Nächster Gast</button></div>`);
+  } else {
+    setHtml("gHero", g.total ? `<div class="empty"><strong>Bereit</strong>Ticket auf der Liste „Goodie + Gewinn“ scannen.<br>Die Seite zieht eine Zufallszahl von 1 bis ${g.total}.<br><br>Noch <b>${poolLeft}</b> Nummern in der Trommel, <b>${prizesLeft}</b> Gewinne offen.</div>`
+      : `<div class="empty"><strong>Nummernliste fehlt</strong>Rechts oben „Excel hochladen“: Spalte A Nummer, Spalte B Gewinn.</div>`);
+  }
+  h.classList.toggle("armed", !!last?.prize && !rolling);
+
+  if (document.activeElement !== $("gTotal")) $("gTotal").value = g.total || "";
+  setHtml("gInfo", g.total ? `<span>Nummern <b>1–${g.total}</b></span><span><b>${slots.length}</b> Gewinnnummern</span><span><b>${poolLeft}</b> noch in der Trommel</span>${g.importedAt ? `<span>Liste vom ${new Date(g.importedAt).toLocaleString("de-DE")}</span>` : ""}` : `<span>Noch keine Liste hochgeladen.</span>`);
+
+  const q = norm($("gSearch").value);
+  const shown = slots.filter(x => !q || String(x.nr) === q || norm(x.prize).includes(q));
+  $("gSearchInfo").textContent = q ? `${shown.length} von ${slots.length}` : "";
+  const byNr = Object.fromEntries((g.draws || []).filter(d => d.nr).map(d => [d.nr, d]));
+  setHtml("gSlots", !slots.length ? `<div class="none">Keine Gewinnnummern.</div>` : !shown.length ? `<div class="none">Nichts gefunden.</div>` : shown.map(x => {
+    const d = byNr[x.nr];
+    return `<div class="row ${d ? "used" : ""}"><div class="n">${x.nr}</div><div><div class="who">${esc(x.prize)}</div>${x.nr > g.total ? `<div class="sub" style="color:var(--red)">liegt über ${g.total} – wird nie gezogen</div>` : ""}</div>
+      <div class="sub">${d ? `gezogen · ${esc(d.name || d.code)}` : "offen"}</div></div>`;
+  }).join(""));
+
+  const draws = g.draws || [];
+  $("gDrawInfo").textContent = draws.length ? `${draws.filter(d => d.prize).length} Gewinner` : "";
+  setHtml("gDraws", draws.length ? draws.map(d => `
+    <div class="row ${d.prize ? "win" : ""}">
+      <div class="n">${d.nr ?? "–"}</div>
+      <div><div class="who">${d.prize ? esc(d.prize) : `<span style="color:var(--slate);font-weight:500">nur Goodie-Bag</span>`} · ${esc(d.name || "Name unbekannt")}${d.test ? `<span class="tag" style="background:var(--bg);color:var(--slate)">Test</span>` : ""}</div>
+        <div class="sub">${esc(d.email || "keine E-Mail")} · ${esc(d.code)}${d.envNr ? " · Umschlag " + esc(d.envNr) : ""} · ${time(d.t)}</div></div>
+      <div class="tools" style="display:flex;gap:6px;align-items:center">
+        ${d.prize ? `<label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--slate)"><input type="checkbox" style="width:20px;height:20px" data-gcontact="${esc(d.id)}" ${d.contacted ? "checked" : ""}>kontaktiert</label>` : ""}
+        <button class="btn ghost" style="padding:9px 12px;font-size:14px" data-gdel="${esc(d.id)}">Löschen</button>
+      </div>
+    </div>`).join("") : `<div class="none">Noch keine Ziehungen.</div>`);
+}
+
+function startRoll(g){
+  gRollUntil = Date.now() + 1800;
+  clearInterval(gRollTimer);
+  gRollTimer = setInterval(() => {
+    const el = $("rollNr");
+    if (Date.now() >= gRollUntil) {
+      clearInterval(gRollTimer); renderGoodie();
+      const last = (state.goodie?.draws || []).find(d => d.id === state.goodie?.lastDrawId);
+      beep(); if (last?.prize) setTimeout(beep, 380);
+      flash("gHero");
+      return;
+    }
+    if (el) el.textContent = Math.max(1, Math.ceil(Math.random() * (g.total || 99)));
+  }, 70);
+}
+
+document.addEventListener("click", async (e) => {
+  const a = e.target.closest("[data-g]");
+  if (a) { state.goodie.lastDrawId = null; renderGoodie(); await gApi({ action: a.dataset.g }).catch(()=>{}); return poll(); }
+  const del = e.target.closest("[data-gdel]");
+  if (del) {
+    const d = state.goodie.draws.find(x => x.id === del.dataset.gdel);
+    if (!confirm(`Ziehung Nr. ${d?.nr ?? "–"} (${d?.name || d?.code}) löschen? Die Nummer kommt zurück in die Trommel.`)) return;
+    await gApi({ action:"goodieDelete", id: del.dataset.gdel }).catch(()=>{}); return poll();
+  }
+});
+document.addEventListener("change", async (e) => {
+  const c = e.target.closest("[data-gcontact]");
+  if (c) { await gApi({ action:"goodieContacted", id: c.dataset.gcontact, value: c.checked }).catch(()=>{}); poll(); }
+});
+$("gSearch").oninput = () => renderGoodie();
+$("gSearch").onkeydown = (e) => { if (e.key === "Escape") { $("gSearch").value = ""; renderGoodie(); } };
+$("gTestBtn").onclick = async () => {
+  if (!state.goodie?.total) return alert("Erst die Nummernliste hochladen.");
+  try { await gApi({ action:"goodieTest", code:"TEST" }); } catch (err) { alert(err.message); }
+  poll();
+};
+$("gTotalForm").onsubmit = async (e) => {
+  e.preventDefault();
+  try { await gApi({ action:"goodieTotal", total: $("gTotal").value }); $("gTotal").blur(); } catch (err) { alert(err.message); }
+  poll();
+};
+$("gResetBtn").onclick = async () => {
+  if (!confirm("Alle Goodie-Ziehungen löschen und alle Nummern zurück in die Trommel legen? Vorher als CSV exportieren!")) return;
+  await gApi({ action:"goodieReset" }).catch(()=>{}); poll();
+};
+$("gExportBtn").onclick = () => {
+  const d = state.goodie?.draws || []; if (!d.length) return alert("Noch keine Ziehungen.");
+  const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const rows = [["Zeit","Nummer","Gewinn","Name","E-Mail","Bestellnummer","Umschlag","Kontaktiert","Hinweis"]]
+    .concat([...d].reverse().map(x => [new Date(x.t).toLocaleString("de-DE"), x.nr ?? "", x.prize || "nur Goodie-Bag", x.name, x.email, x.code, x.envNr ?? "", x.prize ? (x.contacted ? "ja" : "nein") : "", [x.test ? "Testziehung" : "", x.note].filter(Boolean).join(", ")]));
+  const blob = new Blob(["﻿" + rows.map(r => r.map(q).join(";")).join("\r\n")], { type:"text/csv;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `Goodie-Ziehungen_${new Date().toISOString().slice(0,10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+$("gImportBtn").onclick = () => $("gFile").click();
+$("gFile").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type:"array" });
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:"", raw:false }).filter(r => r.some(c => String(c).trim()));
+    if (!aoa.length) throw new Error("Die Datei ist leer.");
+    const head = aoa[0].map(norm);
+    let cNr = head.findIndex(h => /^(nr|nummer|nummern|los|losnummer|zahl|glueckszahl|gluckszahl|#)/.test(h));
+    let cPrize = head.findIndex(h => /(gewinn|preis|artikel|zusatz|produkt|bezeichnung)/.test(h));
+    let rows = aoa.slice(1);
+    if (cNr < 0) { cNr = 0; if (cPrize < 0) { cPrize = 1; rows = isNaN(parseInt(aoa[0][0])) ? aoa.slice(1) : aoa; } }
+    if (cPrize < 0) cPrize = cNr === 0 ? 1 : 0;
+    const out = rows.map(r => ({ nr: parseInt(String(r[cNr]).replace(/\D/g, "")), prize: String(r[cPrize] ?? "").trim() })).filter(r => r.nr > 0);
+    if (!out.length) throw new Error("Keine Nummern gefunden. Spalte A: Nummer, Spalte B: Gewinn.");
+    const withPrize = out.filter(r => r.prize).length;
+    const maxNr = Math.max(...out.map(r => r.nr));
+    const def = String(Math.max(maxNr, state.goodie?.total || 0));
+    const ans = prompt(`${out.length} Nummern gefunden, davon ${withPrize} mit Gewinn.\n\nZufallszahl von 1 bis … (Anzahl Teilnehmer/Lose):`, def);
+    if (ans === null) return;
+    const r = await gApi({ action:"goodieImport", rows: out, total: ans.trim() || def });
+    alert(`Übernommen: ${r.prizes} Gewinnnummern, gezogen wird von 1 bis ${r.total}.`);
+  } catch (err) { alert("Datei konnte nicht übernommen werden: " + err.message); }
+  poll();
+};
+
 // ---------- Check-in-Listen ----------
-const ROLE_TXT = { umschlag:"Umschläge", tombola:"Tombola", ignorieren:"ignorieren", offen:"noch nicht zugeordnet" };
+const ROLE_TXT = { umschlag:"Umschläge", tombola:"Tombola", goodie:"Goodie + Gewinn", ignorieren:"ignorieren", offen:"noch nicht zugeordnet" };
 function renderLists(){
   if (!$("dlg").open) return;
   const lists = state.lists || [];
   if (document.activeElement?.dataset?.role) return; // Auswahl nicht während der Bedienung neu zeichnen
   setHtml("listTable", lists.length ? `<table><tr><th>Liste</th><th>ID</th><th>gehört zu</th></tr>${lists.map(l => `
     <tr class="listrow"><td>${esc(l.name || "(Name unbekannt)")}</td><td>${esc(l.id)}</td><td>
-      <select data-role="${esc(l.id)}">${["umschlag","tombola","ignorieren"].concat(l.role === "offen" ? ["offen"] : []).map(r => `<option value="${r}" ${l.role === r ? "selected" : ""}>${ROLE_TXT[r]}</option>`).join("")}</select>
+      <select data-role="${esc(l.id)}">${["umschlag","tombola","goodie","ignorieren"].concat(l.role === "offen" ? ["offen"] : []).map(r => `<option value="${r}" ${l.role === r ? "selected" : ""}>${ROLE_TXT[r]}</option>`).join("")}</select>
       ${l.role === "offen" ? `<span class="tag">bitte zuordnen</span>` : ""}
     </td></tr>`).join("")}</table>` : `<p>Noch keine Listen bekannt. Sobald ein Ticket gescannt wurde, erscheint die Liste hier – oder „Listen aus pretix laden“.</p>`);
 }
@@ -585,7 +784,7 @@ async function poll(){
     state = data; lastOk = Date.now();
     const openCodes = new Set(Object.values(state.orders).filter(o => o.status === "offen").map(o => o.code));
     const fresh = seen ? [...openCodes].filter(c => !seen.has(c)) : [];
-    render(); renderTombola(); renderLists();
+    render(); renderTombola(); renderGoodie(); renderLists();
     if (fresh.length) { beep(); flash("hero"); }
     seen = openCodes;
     const lw = state.tombola?.lastWinId || null;

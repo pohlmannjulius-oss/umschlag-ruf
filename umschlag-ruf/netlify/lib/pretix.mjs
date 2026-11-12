@@ -24,10 +24,11 @@ export async function fetchList(org, event, id) {
 }
 
 export const EMPTY_CONFIG = { lists: {}, events: {} };
-export const ROLES = ["umschlag", "tombola", "ignorieren"];
+export const ROLES = ["umschlag", "tombola", "goodie", "ignorieren"];
 
 // Rolle aus dem Listennamen raten
 export function guessRole(name) {
+  if (/goodie|zusatz|lostrommel|zufall/i.test(name || "")) return "goodie";
   return /tombola|verlosung|gewinn/i.test(name || "") ? "tombola" : null;
 }
 
@@ -45,6 +46,7 @@ export async function resolveList(org, event, listId) {
   let role = known?.role;
   if (!role) {
     if (process.env.TOMBOLA_LIST_ID && String(process.env.TOMBOLA_LIST_ID) === id) role = "tombola";
+    if (process.env.GOODIE_LIST_ID && String(process.env.GOODIE_LIST_ID) === id) role = "goodie";
     if (!role) {
       try { name = (await fetchList(org, event, id)).name || ""; } catch {}
       role = guessRole(name);

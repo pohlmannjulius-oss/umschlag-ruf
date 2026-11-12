@@ -3,6 +3,7 @@
 import { readJSON, update, applyScan, EMPTY_STATE, json } from "../lib/store.mjs";
 import { fetchOrder, resolveList, envelopeListFilter } from "../lib/pretix.mjs";
 import { applyTombolaScan, EMPTY_TOMBOLA } from "../lib/tombola.mjs";
+import { applyGoodieScan, EMPTY_GOODIE } from "../lib/goodie.mjs";
 
 const ACTIONS = ["pretix.event.checkin", "pretix.event.checkin.reverted"];
 
@@ -36,13 +37,25 @@ export default async (req) => {
   const isRevert = body.action.endsWith("reverted");
   const positionId = body.orderposition_id ?? null;
   const { role, cfg } = await resolveList(body.organizer, body.event, body.checkin_list);
-  if (role !== "umschlag" && role !== "tombola") return json({ ok: true, ignored: `Liste ${body.checkin_list} (${role})` });
+  if (!["umschlag", "tombola", "goodie"].includes(role)) return json({ ok: true, ignored: `Liste ${body.checkin_list} (${role})` });
 
   const { data: mapping } = await readJSON("mapping", { rows: {} });
   const m = mapping.rows?.[code] || {};
 
   let order = null;
   try { order = await fetchOrder(body.organizer, body.event, code); } catch (e) { console.log("Bestellung nicht abrufbar:", e.message); }
+
+  if (role === "goodie") {
+    const s = order ? summarize(order, positionId) : null;
+    await update("goodie", EMPTY_GOODIE, (g) => applyGoodieScan(g, {
+      code, positionId, envNr: m.nr, revert: isRevert,
+      notificationId: body.notification_id ? `${body.notification_id}` : null,
+      name: s ? (s.scanned || s.name) : m.name || "",
+      email: s?.scannedEmail || "",
+      note: order ? "" : "Details nicht abrufbar",
+    }));
+    return json({ ok: true, role });
+  }
 
   if (role === "tombola") {
     const s = order ? summarize(order, positionId) : null;

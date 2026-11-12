@@ -2,18 +2,20 @@
 import { readJSON, update, applyScan, EMPTY_STATE, json, checkPin } from "../lib/store.mjs";
 import { EMPTY_TOMBOLA } from "../lib/tombola.mjs";
 import { EMPTY_CONFIG } from "../lib/pretix.mjs";
+import { EMPTY_GOODIE } from "../lib/goodie.mjs";
 
 export default async (req) => {
   if (!checkPin(req)) return json({ error: "pin" }, 401);
 
   if (req.method === "GET") {
-    const [{ data }, { data: mapping }, { data: tombola }, { data: cfg }] = await Promise.all([
+    const [{ data }, { data: mapping }, { data: tombola }, { data: cfg }, { data: goodie }] = await Promise.all([
       readJSON("state", EMPTY_STATE), readJSON("mapping", { rows: {} }),
-      readJSON("tombola", EMPTY_TOMBOLA), readJSON("config", EMPTY_CONFIG),
+      readJSON("tombola", EMPTY_TOMBOLA), readJSON("config", EMPTY_CONFIG), readJSON("goodie", EMPTY_GOODIE),
     ]);
     const { seen, ...t } = { ...EMPTY_TOMBOLA, ...tombola };
+    const { seen: _s, ...g } = { ...EMPTY_GOODIE, ...goodie };
     return json({
-      ...data, tombola: t, lists: Object.values(cfg.lists || {}),
+      ...data, tombola: t, goodie: g, lists: Object.values(cfg.lists || {}),
       mappingCount: Object.keys(mapping.rows || {}).length, mappingAt: mapping.updatedAt || null, now: new Date().toISOString(),
     });
   }
