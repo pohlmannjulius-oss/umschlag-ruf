@@ -2,6 +2,8 @@
 import { randomInt } from "node:crypto";
 import { newId } from "./tombola.mjs";
 
+const DEMO = ["Lena Hoffmann", "Jonas Becker", "Mia Schulte", "Lukas Wagner", "Emma Krüger", "Felix Brandt", "Hannah Vogel", "Paul Neumann", "Sophie Lange", "Tim Hartmann", "Clara Winter", "Noah Fischer"];
+
 export const EMPTY_SHOW = { draws: [], currentId: null, playKey: null };
 
 // "Penny, Jenny" → "Jenny Penny"
@@ -25,6 +27,8 @@ export function buildPool(state, mapping, { test = false } = {}) {
       const people = String(m.people || "").split(",").map((x) => x.trim()).filter(Boolean);
       (people.length ? people : [m.name]).forEach((n, i) => pool.push({ key: `${code}#${i}`, name: fullName(n), code, nr: m.nr ?? null }));
     }
+    // Ohne Nummernliste: Beispielnamen, damit die Animation trotzdem getestet werden kann
+    if (!pool.length) DEMO.forEach((n, i) => pool.push({ key: `DEMO#${i}`, name: n, code: "TEST", nr: null }));
     return pool;
   }
   for (const o of Object.values(state.orders || {})) {

@@ -110,6 +110,7 @@ Unter *Einstellungen → 4. Check-in-Listen* siehst du, welche Liste wohin gehö
 
 ## Bühne (Reiter „Bühne“)
 
+- „Testziehung“: zieht ohne Check-ins aus der Nummernliste (oder Beispielnamen), zählt nicht als echte Ziehung.
 - Für Beamer/TV: Seite mit `…/#buehne` öffnen, „Vollbild“ (oder Doppelklick auf die Bühne), oben „Ton an“.
 - Gewinn wählen (aus der Tombola-Liste oder frei eintippen) → „Namen ziehen“ oder Leertaste.
 - Gezogen wird aus allen auf der Eingangsliste eingecheckten Gästen; angezeigt werden nur Vorname + Initial.

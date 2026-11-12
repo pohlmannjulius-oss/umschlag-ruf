@@ -361,15 +361,16 @@
       </div>
       <div class="line">
         <button class="drawbtn" id="drawBtn">Namen ziehen</button>
+        <button class="btn ghost" id="testDrawBtn">Testziehung</button>
         <button class="btn ghost" id="fsBtn">Vollbild</button>
         <button class="btn ghost" id="armBtn" hidden>Gewinn in Tombola bereitlegen</button>
       </div>
       <div class="line">
         <select id="sAnim" style="flex:0 1 260px"><option value="auto">Animation: abwechselnd</option><option value="piste">Pisten-Walze</option><option value="gondel">Bergfahrt (Gondeln)</option><option value="tafel">Anzeigetafel</option></select>
         <label><input type="checkbox" id="sUnique" checked>Jeder nur einmal</label>
-        <label><input type="checkbox" id="sTest">Test: alle aus der Nummernliste</label>
+
       </div>
-      <div class="hint">Gezogen wird aus allen Gästen, die auf der Eingangsliste eingecheckt sind. Leertaste startet die Ziehung. Für Ton am Beamer oben „Ton an“ tippen. Auf dem Bildschirm steht nur Vorname und Initial.</div>
+      <div class="hint">Gezogen wird aus allen Gästen, die auf der Eingangsliste eingecheckt sind. „Testziehung“ zieht ohne Check-ins aus der Nummernliste (oder aus Beispielnamen) und zählt nicht als echte Ziehung. Leertaste startet die Ziehung. Für Ton am Beamer oben „Ton an“ tippen. Auf dem Bildschirm steht nur Vorname und Initial.</div>
     </div>
     <div class="panel hist">
       <h2 style="padding:0 0 10px;border:0">Bisher gezogen <span class="h2tools"><button id="sResetBtn">Liste leeren</button></span></h2>
@@ -1041,7 +1042,7 @@ const fmtWatch = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 100
 
 async function refreshPool(){
   if (Date.now() - poolAt < 4000) return; poolAt = Date.now();
-  try { poolInfo = await tApi({ action:"showPool", test: $("sTest").checked }); } catch { poolInfo = null; }
+  try { poolInfo = await tApi({ action:"showPool" }); } catch { poolInfo = null; }
   renderStage();
 }
 
@@ -1111,7 +1112,7 @@ let watchStart = 0;
 const reelNames = (d, n) => { const names = d.reel.length ? d.reel : ["…"]; const l = []; while (l.length < n) l.push(...names); l.length = n; return l; };
 
 async function playDraw(d){
-  stagePlaying = true; $("drawBtn").disabled = true; $("armBtn").hidden = true;
+  stagePlaying = true; $("drawBtn").disabled = $("testDrawBtn").disabled = true; $("armBtn").hidden = true;
   const main = $("stageMain"); delete htmlCache.stageMain;
   stageEl.classList.remove("finish", "lit");
   if (reduceMotion) { await sleep(300); return finishDraw(d); }
@@ -1191,20 +1192,22 @@ function finishDraw(d){
   stageEl.classList.add("lit", "finish"); setLamps(3);
   $("stageMain").innerHTML = stageResult(d); htmlCache.stageMain = $("stageMain").innerHTML;
   if (!reduceMotion) burst(); fanfare();
-  stagePlaying = false; $("drawBtn").disabled = false; poolAt = 0; refreshPool();
+  stagePlaying = false; $("drawBtn").disabled = $("testDrawBtn").disabled = false; poolAt = 0; refreshPool();
   $("armBtn").hidden = !(d.prizeId && !d.test);
 }
 
-$("drawBtn").onclick = async () => {
+async function startDraw(test){
   if (stagePlaying) return;
   try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume?.(); } catch {}
   $("drawBtn").disabled = true;
   try {
-    await tApi({ action:"showDraw", prizeId: $("sPrize").value || null, prize: $("sPrizeText").value.trim(), unique: $("sUnique").checked, test: $("sTest").checked, anim: $("sAnim").value });
+    await tApi({ action:"showDraw", prizeId: test ? null : ($("sPrize").value || null), prize: test ? (currentPrizeLabel() || "Testgewinn") : $("sPrizeText").value.trim(), unique: $("sUnique").checked, test, anim: $("sAnim").value });
     $("sPrizeText").value = "";
   } catch (err) { alert(err.message); $("drawBtn").disabled = false; return; }
   poll();
-};
+}
+$("drawBtn").onclick = () => startDraw(false);
+$("testDrawBtn").onclick = () => startDraw(true);
 $("armBtn").onclick = async () => {
   const d = (state.show?.draws || []).find(x => x.id === state.show.currentId); if (!d?.prizeId) return;
   try { await tApi({ action:"arm", id: d.prizeId }); $("armBtn").hidden = true; alert(`„${d.prize}“ liegt im Tombola-Reiter bereit. Wenn ${d.display} am Stand ist: Ticket auf der Tombola-Liste scannen.`); } catch (err) { alert(err.message); }
@@ -1214,7 +1217,7 @@ $("fsBtn").onclick = () => { try { stageEl.requestFullscreen?.() ?? stageEl.webk
 stageEl.ondblclick = () => document.fullscreenElement ? document.exitFullscreen() : $("fsBtn").click();
 try { $("sAnim").value = localStorage.getItem("ur_anim") || "auto"; } catch {}
 $("sAnim").onchange = () => ls.set("ur_anim", $("sAnim").value);
-$("sTest").onchange = $("sUnique").onchange = () => { poolAt = 0; refreshPool(); };
+$("sUnique").onchange = () => { poolAt = 0; refreshPool(); };
 $("sPrize").onchange = $("sPrizeText").oninput = () => { if (!stagePlaying && !state.show?.currentId) { delete htmlCache.stageMain; renderStage(); } };
 $("sResetBtn").onclick = async () => { if (!confirm("Liste der gezogenen Namen leeren? Danach können alle wieder gezogen werden.")) return; await tApi({ action:"showReset" }).catch(()=>{}); poolAt = 0; poll(); };
 document.addEventListener("click", async (e) => {
