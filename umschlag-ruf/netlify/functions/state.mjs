@@ -3,19 +3,20 @@ import { readJSON, update, applyScan, EMPTY_STATE, json, checkPin } from "../lib
 import { EMPTY_TOMBOLA } from "../lib/tombola.mjs";
 import { EMPTY_CONFIG } from "../lib/pretix.mjs";
 import { EMPTY_GOODIE } from "../lib/goodie.mjs";
+import { EMPTY_SHOW } from "../lib/show.mjs";
 
 export default async (req) => {
   if (!checkPin(req)) return json({ error: "pin" }, 401);
 
   if (req.method === "GET") {
-    const [{ data }, { data: mapping }, { data: tombola }, { data: cfg }, { data: goodie }] = await Promise.all([
+    const [{ data }, { data: mapping }, { data: tombola }, { data: cfg }, { data: goodie }, { data: show }] = await Promise.all([
       readJSON("state", EMPTY_STATE), readJSON("mapping", { rows: {} }),
-      readJSON("tombola", EMPTY_TOMBOLA), readJSON("config", EMPTY_CONFIG), readJSON("goodie", EMPTY_GOODIE),
+      readJSON("tombola", EMPTY_TOMBOLA), readJSON("config", EMPTY_CONFIG), readJSON("goodie", EMPTY_GOODIE), readJSON("show", EMPTY_SHOW),
     ]);
     const { seen, ...t } = { ...EMPTY_TOMBOLA, ...tombola };
     const { seen: _s, ...g } = { ...EMPTY_GOODIE, ...goodie };
     return json({
-      ...data, tombola: t, goodie: g, lists: Object.values(cfg.lists || {}),
+      ...data, tombola: t, goodie: g, show: { ...EMPTY_SHOW, ...show }, lists: Object.values(cfg.lists || {}),
       mappingCount: Object.keys(mapping.rows || {}).length, mappingAt: mapping.updatedAt || null, now: new Date().toISOString(),
     });
   }
@@ -43,6 +44,23 @@ export default async (req) => {
       return applyScan(s, { code, nr: m?.nr, name: m?.name || "Testscan", total, inCount }, "test");
     });
     return json({ ok: true, found: !!m });
+  }
+
+  if (action === "manual") {
+    // Umschlag ohne Scan ausgeben (Ticket vergessen, Scanner/Netz weg)
+    const { data: mapping } = await readJSON("mapping", { rows: {} });
+    const m = mapping.rows?.[code];
+    if (!m) return json({ error: "Bestellnummer nicht in der Nummernliste" }, 400);
+    await update("state", EMPTY_STATE, (s) => {
+      const now = new Date().toISOString();
+      const o = s.orders[code];
+      if (o) { o.status = "ausgegeben"; o.doneAt = now; o.manual = true; }
+      else s.orders[code] = { code, nr: m.nr, name: m.name, total: m.tickets, inCount: 0, status: "ausgegeben", firstAt: now, lastAt: now, doneAt: now, manual: true, note: "ohne Scan ausgegeben", present: [] };
+      s.feed.unshift({ t: now, code, nr: m.nr, name: m.name, action: "manuell", inCount: o?.inCount || 0, total: m.tickets });
+      s.feed = s.feed.slice(0, 60);
+      return s;
+    });
+    return json({ ok: true });
   }
 
   if (action === "reset") {

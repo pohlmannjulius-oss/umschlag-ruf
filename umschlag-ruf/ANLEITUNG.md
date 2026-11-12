@@ -100,3 +100,19 @@ Unter *Einstellungen → 4. Check-in-Listen* siehst du, welche Liste wohin gehö
 3. Ablauf: Ticket auf der Goodie-Liste scannen → die Seite zieht eine Zufallszahl (jede Nummer nur einmal) → zeigt Gewinn oder „Leider kein Zusatzgewinn – Goodie-Bag ausgeben“.
 4. Wird dasselbe Ticket nochmal gescannt, erscheint das alte Ergebnis – keine zweite Ziehung. Wird der Check-in in pretix zurückgenommen, kommt die Nummer zurück in die Trommel.
 5. Nach dem Event: **CSV exportieren**, dann *Einstellungen → Goodie-Ziehungen löschen*.
+
+## Suche und „Fehlt noch“ (Reiter „Umschläge“)
+
+- Suchfeld rechts: Name, Teilnehmer, Bestellnummer oder Umschlag-Nr. eintippen → Umschlag und Status erscheinen.
+- „Fehlt noch“ zeigt alle Bestellungen, die noch nicht eingecheckt sind; „Alle“ zeigt die komplette Nummernliste mit Status.
+- „Ohne Scan ausgeben“: für Gäste ohne Ticket oder wenn Scanner/Netz ausfällt.
+- Tipp: In der Nummernliste eine Spalte „Teilnehmer“ mitgeben, dann findet die Suche auch Mitfahrer.
+
+## Bühne (Reiter „Bühne“)
+
+- Für Beamer/TV: Seite mit `…/#buehne` öffnen, „Vollbild“ (oder Doppelklick auf die Bühne), oben „Ton an“.
+- Gewinn wählen (aus der Tombola-Liste oder frei eintippen) → „Namen ziehen“ oder Leertaste.
+- Gezogen wird aus allen auf der Eingangsliste eingecheckten Gästen; angezeigt werden nur Vorname + Initial.
+- Drei Animationen: Pisten-Walze, Bergfahrt (Gondeln), Anzeigetafel – standardmäßig abwechselnd.
+- Ziehung startet auf allen Geräten gleichzeitig: Tablet bedienen, Beamer zeigt.
+- „Gewinn in Tombola bereitlegen“: Wenn der Gewinner am Stand ist, Ticket auf der Tombola-Liste scannen → Name/E-Mail landen in der Gewinnerliste.

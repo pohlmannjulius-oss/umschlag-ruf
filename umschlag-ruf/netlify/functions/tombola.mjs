@@ -3,8 +3,11 @@ import { readJSON, update, json, checkPin } from "../lib/store.mjs";
 import { EMPTY_TOMBOLA, applyTombolaScan, newId, prizeLeft } from "../lib/tombola.mjs";
 import { EMPTY_CONFIG, ROLES, fetchLists, guessRole } from "../lib/pretix.mjs";
 import { EMPTY_GOODIE, applyGoodieScan } from "../lib/goodie.mjs";
+import { EMPTY_SHOW, buildPool, drawFrom } from "../lib/show.mjs";
+import { EMPTY_STATE } from "../lib/store.mjs";
 
 const T = (fn) => update("tombola", EMPTY_TOMBOLA, (t) => fn({ ...structuredClone(EMPTY_TOMBOLA), ...t }));
+const S = (fn) => update("show", EMPTY_SHOW, (x) => fn({ ...structuredClone(EMPTY_SHOW), ...x }));
 const G = (fn) => update("goodie", EMPTY_GOODIE, (g) => fn({ ...structuredClone(EMPTY_GOODIE), ...g }));
 
 export default async (req) => {
@@ -132,6 +135,32 @@ export default async (req) => {
       return json({ ok: true });
     case "goodieReset":
       await G((g) => ({ ...g, used: [], draws: [], lastDrawId: null }));
+      return json({ ok: true });
+
+    // ---- Bühne ----
+    case "showDraw": {
+      const [{ data: st }, { data: mapping }, { data: tom }] = await Promise.all([readJSON("state", EMPTY_STATE), readJSON("mapping", { rows: {} }), readJSON("tombola", EMPTY_TOMBOLA)]);
+      const prizeObj = (tom.prizes || []).find((p) => p.id === b.prizeId);
+      const pool = buildPool(st, mapping, { test: !!b.test });
+      let result;
+      await S((x) => { result = drawFrom(x, pool, { prize: prizeObj?.name || String(b.prize || "").trim().slice(0, 80), prizeId: prizeObj?.id || null, unique: b.unique !== false, test: !!b.test, anim: String(b.anim || "auto") }); return result.show; });
+      return result.error ? json({ error: result.error }, 400) : json({ ok: true, poolSize: pool.length });
+    }
+    case "showPool": {
+      const [{ data: st }, { data: mapping }] = await Promise.all([readJSON("state", EMPTY_STATE), readJSON("mapping", { rows: {} })]);
+      const { data: sh } = await readJSON("show", EMPTY_SHOW);
+      const pool = buildPool(st, mapping, { test: !!b.test });
+      const taken = new Set((sh.draws || []).filter((d) => !d.test || b.test).map((d) => d.key));
+      return json({ ok: true, total: pool.length, eligible: pool.filter((p) => !taken.has(p.key)).length });
+    }
+    case "showClear":
+      await S((x) => ({ ...x, currentId: null }));
+      return json({ ok: true });
+    case "showDelete":
+      await S((x) => ({ ...x, draws: x.draws.filter((d) => d.id !== b.id), currentId: x.currentId === b.id ? null : x.currentId }));
+      return json({ ok: true });
+    case "showReset":
+      await S(() => structuredClone(EMPTY_SHOW));
       return json({ ok: true });
 
     // ---- Check-in-Listen ----
