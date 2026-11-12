@@ -581,6 +581,7 @@ $("armBtn").onclick = async () => {
 };
 $("fsBtn").onclick = () => { try { stageEl.requestFullscreen ? stageEl.requestFullscreen() : stageEl.webkitRequestFullscreen?.(); } catch {} };
 stageEl.ondblclick = () => (document.fullscreenElement ? document.exitFullscreen() : $("fsBtn").click());
+$("fsBtn").addEventListener("click", () => $("fsBtn").blur());
 try { $("sAnim").value = localStorage.getItem("ur_anim") || "auto"; } catch {}
 $("sAnim").onchange = () => ls.set("ur_anim", $("sAnim").value);
 $("sUnique").onchange = () => { poolAt = 0; refreshPool(); };
@@ -591,11 +592,41 @@ document.addEventListener("click", async (e) => {
   if (!confirm("Diese Ziehung löschen? Die Person kann dann wieder gezogen werden.")) return;
   await tApi({ action: "showDelete", id: x.dataset.sdel }).catch(() => {}); poolAt = 0; poll();
 });
+// Tastatur & Präsentations-Klicker: Leertaste/Enter/Bild↓/→ = weiter, ↑/↓ = Gewinn wählen, T = Testziehung
+function stepPrize(dir) {
+  const sel = $("sPrize"), opts = [...sel.options].filter((o) => !o.disabled);
+  if (!opts.length) return;
+  let i = opts.findIndex((o) => o.value === sel.value); i = (i + dir + opts.length) % opts.length;
+  sel.value = opts[i].value; $("sPrizeText").value = "";
+  if (!stagePlaying && !state.show?.currentId) { delete htmlCache.stageMain; renderStage(); }
+  showHint(opts[i].value ? `Gewinn: ${opts[i].textContent}` : "Ohne Gewinn");
+}
+async function nextStep(test = false) {
+  if (stagePlaying) return;
+  if (state.show?.currentId) { await tApi({ action: "showClear" }).catch(() => {}); state.show.currentId = null; delete htmlCache.stageMain; renderStage(); poll(); return; } // erst zurück auf „Gleich wird gezogen“
+  startDraw(test);
+}
 document.addEventListener("keydown", (e) => {
-  if (tab !== "S" || e.code !== "Space" || /INPUT|SELECT|TEXTAREA|BUTTON/.test(document.activeElement?.tagName || "")) return;
-  e.preventDefault();
-  if (state.show?.currentId && !stagePlaying) { tApi({ action: "showClear" }).then(poll); return; } // erst zurück auf „Gleich wird gezogen“
-  $("drawBtn").click();
+  if (tab !== "S") return;
+  const t = document.activeElement?.tagName || "";
+  if (/INPUT|SELECT|TEXTAREA/.test(t) && !document.fullscreenElement) return;
+  if (t === "BUTTON") document.activeElement.blur(); // Fokus vom Vollbild-Knopf lösen
+  const next = ["Space", "Enter", "NumpadEnter", "PageDown", "ArrowRight"].includes(e.code);
+  if (next) { e.preventDefault(); nextStep(false); }
+  else if (e.code === "ArrowUp" || e.code === "PageUp" || e.code === "ArrowLeft") { e.preventDefault(); if (!stagePlaying) stepPrize(-1); }
+  else if (e.code === "ArrowDown") { e.preventDefault(); if (!stagePlaying) stepPrize(1); }
+  else if (e.code === "KeyT") { e.preventDefault(); nextStep(true); }
+});
+// kurzer Hinweis auf der Bühne (z. B. gewählter Gewinn)
+let hintTimer;
+function showHint(txt, ms = 1800) {
+  let h = stageEl.querySelector(".hint-pop");
+  if (!h) { h = document.createElement("div"); h.className = "hint-pop"; stageEl.appendChild(h); }
+  h.textContent = txt; h.classList.add("on"); clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.remove("on"), ms);
+}
+document.addEventListener("fullscreenchange", () => {
+  document.activeElement?.blur?.();
+  if (document.fullscreenElement === stageEl) showHint("Leertaste: weiter · ↑ ↓ Gewinn wählen · T: Testziehung · Esc: Vollbild verlassen", 4000);
 });
 setInterval(() => { if (stageOn) refreshPool(); }, 5000);
 if (tab === "S") stageVisible(true);

@@ -83,3 +83,9 @@
 .stage .ticket.flipped .front{display:none}
 .stage .ticket.flipped .back{display:flex}
 .stage .ticket .face{backface-visibility:visible;-webkit-backface-visibility:visible}
+
+/* Hinweis im Vollbild */
+.stage .hint-pop{position:absolute;left:50%;bottom:2.4cqw;transform:translate(-50%,.6cqw);z-index:9;padding:.8cqw 1.6cqw;border-radius:.8cqw;
+  background:rgba(10,22,32,.78);border:1px solid rgba(220,229,234,.25);color:#F4F8FF;font-size:1.35cqw;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .2s ease, transform .25s cubic-bezier(.23,1,.32,1)}
+.stage .hint-pop.on{opacity:1;transform:translate(-50%,0)}
