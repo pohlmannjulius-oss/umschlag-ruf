@@ -20,7 +20,9 @@
   input,select{font:inherit}
 
   header{display:flex;align-items:center;gap:16px;padding:14px 24px;background:var(--blue);color:#fff}
-  header h1{font-size:20px;font-weight:700;margin:0;font-stretch:115%;letter-spacing:.2px}
+  header h1{font-size:20px;font-weight:700;margin:0;font-stretch:115%;letter-spacing:.2px;white-space:nowrap}
+  header .counts div,.hbtn,.status{white-space:nowrap}
+  @media (max-width:1240px){header .counts{display:none!important}}
   .status{display:flex;align-items:center;gap:8px;font-size:15px;opacity:.95}
   .dot{width:10px;height:10px;border-radius:50%;background:#7CF0A9;box-shadow:0 0 0 4px rgba(124,240,169,.25)}
   .dot.off{background:#FFB3AB;box-shadow:0 0 0 4px rgba(255,179,171,.25)}
@@ -88,6 +90,42 @@
   .msg.ok{color:var(--ok)} .msg.err{color:var(--red)}
   .close{float:right}
 
+  /* Reiter */
+  main[hidden]{display:none}
+  .tabs{display:flex;gap:4px;background:rgba(255,255,255,.12);padding:4px;border-radius:14px;margin-left:8px}
+  .tabs button{background:transparent;color:#fff;padding:9px 18px;font-size:16px;font-weight:600;border-radius:10px}
+  .tabs button.on{background:#fff;color:var(--blue)}
+  .tabs .badge{display:inline-block;min-width:22px;padding:1px 7px;margin-left:6px;border-radius:999px;background:var(--red);color:#fff;font-size:13px}
+
+  /* Tombola */
+  .prize{font-size:clamp(38px,5.2vw,66px);line-height:1.05;font-weight:800;font-stretch:80%;color:var(--blue);margin:8px 0 6px;overflow-wrap:break-word;hyphens:auto}
+  .armed .prize{color:var(--red)}
+  .scanhint{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:600;margin-top:18px}
+  .pulse{width:16px;height:16px;border-radius:50%;background:var(--red);animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,55,44,.5)}50%{box-shadow:0 0 0 12px rgba(192,55,44,0)}}
+  .winner{font-size:clamp(34px,4.4vw,54px);font-weight:800;margin-top:14px;line-height:1.1;overflow-wrap:break-word;hyphens:auto}
+  .mail{font-size:22px;color:var(--slate);margin-top:6px;overflow-wrap:anywhere}
+  .prizes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:16px 20px;overflow:auto}
+  .pbtn{position:relative;background:var(--bg);border:1px solid var(--line);padding:16px 14px;text-align:left;font-size:18px;font-weight:700;color:var(--ink);min-height:74px}
+  .pbtn small{display:block;font-size:14px;font-weight:500;color:var(--slate);margin-top:4px}
+  .pbtn.on{background:var(--red);border-color:var(--red);color:#fff}
+  .pbtn.on small{color:#fff}
+  .pbtn:disabled{opacity:.45;cursor:default}
+  .pbtn .x{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:8px;background:#fff;border:1px solid #F3C4BE;color:var(--red);font-size:16px;line-height:26px;text-align:center;padding:0}
+  .addprize{display:flex;gap:8px;padding:0 20px 16px;flex-wrap:wrap}
+  .addprize input{padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px;flex:1;min-width:140px}
+  .addprize input.qty{flex:0 0 90px;min-width:0}
+  .wins .row{grid-template-columns:1fr auto;padding:10px 20px}
+  .wins .who{font-size:17px}
+  .wins .tools{display:flex;gap:6px;align-items:center}
+  .wins .tools button{padding:9px 12px;font-size:14px}
+  .wins label{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--slate);white-space:nowrap}
+  .wins input[type=checkbox]{width:20px;height:20px}
+  .tag{display:inline-block;font-size:13px;padding:1px 8px;border-radius:999px;background:#FCECEA;color:var(--red);margin-left:6px;font-weight:600}
+  .h2tools{display:flex;gap:8px;align-items:center}
+  .h2tools button{background:var(--bg);border:1px solid var(--line);padding:6px 12px;font-size:14px;font-weight:600;border-radius:9px;color:var(--ink)}
+  .listrow select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:15px}
+
   /* PIN */
   .pin{position:fixed;inset:0;background:var(--blue);display:none;align-items:center;justify-content:center;z-index:10}
   .pin.show{display:flex}
@@ -108,16 +146,43 @@
 
 <header>
   <h1>Umschlag-Ruf</h1>
+  <nav class="tabs">
+    <button data-tab="U" class="on">Umschläge<span class="badge" id="badgeU" hidden></span></button>
+    <button data-tab="T">Tombola<span class="badge" id="badgeT" hidden></span></button>
+  </nav>
   <div class="status"><span class="dot off" id="dot"></span><span id="statusText">verbinde …</span></div>
-  <div class="counts">
+  <div class="counts" id="countsU">
     <div><b id="cOpen">0</b> offen</div>
     <div><b id="cDone">0</b> ausgegeben</div>
+  </div>
+  <div class="counts" id="countsT" hidden>
+    <div><b id="cWins">0</b> Gewinner</div>
+    <div><b id="cLeft">0</b> Gewinne übrig</div>
   </div>
   <button class="hbtn" id="soundBtn">Ton aus</button>
   <button class="hbtn" id="settingsBtn">Einstellungen</button>
 </header>
 
-<main>
+<main id="viewT" hidden>
+  <section class="hero" id="tHero"></section>
+  <div class="side">
+    <div class="panel" style="flex:1.1">
+      <h2>Gewinne <span class="h2tools"><button id="editPrizes">Bearbeiten</button></span></h2>
+      <div class="prizes" id="prizes"></div>
+      <form class="addprize" id="addPrize">
+        <input id="prizeName" placeholder="Neuer Gewinn, z. B. Skischuhtasche" maxlength="80" autocomplete="off">
+        <input id="prizeQty" class="qty" type="number" min="1" placeholder="Anzahl">
+        <button class="btn">Hinzufügen</button>
+      </form>
+    </div>
+    <div class="panel wins" style="flex:1">
+      <h2>Gewinner <span class="h2tools"><span id="winInfo"></span><button id="exportBtn">CSV exportieren</button></span></h2>
+      <div class="queue" id="wins"></div>
+    </div>
+  </div>
+</main>
+
+<main id="viewU">
   <section class="hero" id="hero"></section>
   <div class="side">
     <div class="panel" style="flex:1">
@@ -157,9 +222,24 @@
     <p>Falls versehentlich abgehakt: hier zurückholen.</p>
     <div id="doneList"></div>
 
+    <h3>4. Check-in-Listen aus pretix</h3>
+    <p>Legt fest, welche pretix-Check-in-Liste wohin gehört. Listen mit „Tombola“ im Namen werden automatisch erkannt. Die ID steht in pretix in der Adresszeile, wenn du die Liste öffnest.</p>
+    <div id="listTable"></div>
+    <div class="field">
+      <button class="btn ghost" id="loadLists">Listen aus pretix laden</button>
+      <input type="text" id="listId" placeholder="Listen-ID" inputmode="numeric" style="min-width:120px;width:140px">
+      <button class="btn ghost" id="addListBtn">Als Tombola-Liste eintragen</button>
+    </div>
+    <p class="msg" id="listMsg"></p>
+
+    <h3>5. Tombola testen</h3>
+    <p>Simuliert einen Tombola-Scan ohne pretix (Gewinn vorher antippen).</p>
+    <div class="field"><input type="text" id="tTestCode" placeholder="Bestellnummer" autocapitalize="characters"><button class="btn" id="tTestBtn">Tombola-Testscan</button></div>
+    <p class="msg" id="tTestMsg"></p>
+
     <h3>Zurücksetzen</h3>
-    <p>Leert Warteschlange und Ticker (z. B. nach dem Testen). Die Nummernliste bleibt erhalten.</p>
-    <div class="field"><button class="btn danger" id="resetBtn">Alles zurücksetzen</button></div>
+    <p>„Umschläge zurücksetzen“ leert Warteschlange und Ticker, die Nummernliste bleibt. „Gewinner löschen“ leert die Gewinnerliste, die Gewinne bleiben. Vorher die Gewinner als CSV exportieren!</p>
+    <div class="field"><button class="btn danger" id="resetBtn">Umschläge zurücksetzen</button><button class="btn danger" id="tResetBtn">Gewinner löschen</button></div>
   </div>
 </dialog>
 
@@ -267,6 +347,171 @@ document.addEventListener("click", async (e) => {
   poll();
 });
 
+// ---------- Reiter ----------
+let tab = ls.get("ur_tab") === "T" ? "T" : "U";
+function showTab(t){
+  tab = t; ls.set("ur_tab", t);
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  $("viewU").hidden = t !== "U"; $("viewT").hidden = t !== "T";
+  $("countsU").hidden = t !== "U"; $("countsT").hidden = t !== "T";
+  renderBadges();
+}
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+const htmlCache = {};
+function setHtml(id, html){ if (htmlCache[id] === html) return; htmlCache[id] = html; $(id).innerHTML = html; }
+function flash(id){ const h = $(id); h.classList.remove("flash"); void h.offsetWidth; h.classList.add("flash"); }
+function renderBadges(){
+  const open = Object.values(state.orders || {}).filter(o => o.status === "offen").length;
+  const t = state.tombola || {};
+  const missing = (t.wins || []).filter(w => !w.prizeId).length;
+  $("badgeU").hidden = tab === "U" || !open; $("badgeU").textContent = open;
+  $("badgeT").hidden = tab === "T" || !(missing || t.armed); $("badgeT").textContent = missing || "•";
+}
+
+// ---------- Tombola ----------
+let lastWinSeen, editPrizes = false;
+async function tApi(body){ return api("/api/tombola", { method:"POST", body: JSON.stringify(body) }); }
+const prizeLeft = (t, p) => p.qty ? p.qty - t.wins.filter(w => w.prizeId === p.id).length : null;
+
+function renderTombola(){
+  const t = state.tombola || { prizes:[], wins:[] };
+  const armed = t.prizes.find(p => p.id === t.armed);
+  const last = t.wins.find(w => w.id === t.lastWinId);
+  const totalLeft = t.prizes.reduce((s, p) => s + (p.qty ? Math.max(0, prizeLeft(t, p)) : 0), 0);
+  $("cWins").textContent = t.wins.length; $("cLeft").textContent = totalLeft;
+  renderBadges();
+
+  const h = $("tHero");
+  h.classList.toggle("armed", !!armed);
+  if (armed) {
+    setHtml("tHero", `
+      <div class="label">Gewinn bereit</div>
+      <div class="prize">${esc(armed.name)}</div>
+      <div class="scanhint"><span class="pulse"></span>Jetzt Ticket auf der Tombola-Liste scannen</div>
+      ${last ? `<p style="color:var(--slate);font-size:17px;margin-top:22px">Zuletzt: <b style="color:var(--ink)">${esc(last.prizeName || "ohne Gewinn")}</b> an ${esc(last.name || last.code)}</p>` : ""}
+      <div class="actions"><button class="big" style="background:var(--bg);color:var(--ink);border:1px solid var(--line)" data-t="disarm">Abbrechen</button></div>`);
+  } else if (last) {
+    setHtml("tHero", `
+      <div class="label">${last.prizeId ? "Gewonnen!" : "Gescannt – Gewinn fehlt"}</div>
+      ${last.prizeId ? `<div class="prize">${esc(last.prizeName)}</div>` : prizeSelect(t, last, true)}
+      <div class="winner">${esc(last.name || "Name unbekannt")}</div>
+      <div class="mail">${esc(last.email || "keine E-Mail hinterlegt")}</div>
+      <div class="meta">
+        <span class="pill code">${esc(last.code)}</span>
+        ${last.nr ? `<span class="pill">Umschlag ${esc(last.nr)}</span>` : ""}
+        <span class="pill">${time(last.t)}</span>
+        ${last.repeat ? `<span class="pill warn">Hat schon einmal gewonnen</span>` : ""}
+        ${last.note ? `<span class="pill warn">${esc(last.note)}</span>` : ""}
+        ${last.test ? `<span class="pill">Testscan</span>` : ""}
+      </div>
+      <div class="actions"><button class="big" data-t="dismiss">Nächster Gewinn</button></div>`);
+  } else {
+    setHtml("tHero", `<div class="empty"><strong>Gewinn auswählen</strong>Rechts einen Gewinn antippen, dann das Ticket des Gewinners auf der Tombola-Liste scannen.</div>`);
+  }
+
+  $("editPrizes").textContent = editPrizes ? "Fertig" : "Bearbeiten";
+  setHtml("prizes", t.prizes.length ? t.prizes.map(p => {
+    const left = prizeLeft(t, p), gone = left !== null && left <= 0;
+    return `<button class="pbtn ${p.id === t.armed ? "on" : ""}" data-arm="${esc(p.id)}" ${gone && !editPrizes ? "disabled" : ""}>
+      ${esc(p.name)}<small>${left === null ? `${t.wins.filter(w => w.prizeId === p.id).length}× vergeben` : gone ? "vergeben" : `${left} von ${p.qty} übrig`}</small>
+      ${editPrizes ? `<span class="x" data-rm="${esc(p.id)}" title="Löschen">✕</span>` : ""}
+    </button>`;
+  }).join("") : `<div class="none" style="padding:4px">Noch keine Gewinne. Unten eintragen.</div>`);
+
+  $("winInfo").textContent = t.wins.length ? `${t.wins.filter(w => w.contacted).length}/${t.wins.length} kontaktiert` : "";
+  setHtml("wins", t.wins.length ? t.wins.map(w => `
+    <div class="row">
+      <div>
+        <div class="who">${w.prizeId ? esc(w.prizeName) : `<span style="color:var(--red)">Gewinn fehlt</span>`} · ${esc(w.name || "Name unbekannt")}${w.repeat ? `<span class="tag">2. Gewinn</span>` : ""}${w.test ? `<span class="tag" style="background:var(--bg);color:var(--slate)">Test</span>` : ""}</div>
+        <div class="sub">${esc(w.email || "keine E-Mail")} · ${esc(w.code)}${w.nr ? " · Umschlag " + esc(w.nr) : ""} · ${time(w.t)}</div>
+        ${w.prizeId ? "" : prizeSelect(t, w, false)}
+      </div>
+      <div class="tools">
+        <label><input type="checkbox" data-contact="${esc(w.id)}" ${w.contacted ? "checked" : ""}>kontaktiert</label>
+        <button class="btn ghost" data-delwin="${esc(w.id)}">Löschen</button>
+      </div>
+    </div>`).join("") : `<div class="none">Noch keine Gewinner.</div>`);
+}
+function prizeSelect(t, w, big){
+  return `<select data-assign="${esc(w.id)}" style="margin-top:8px;padding:${big ? "14px" : "8px"};font-size:${big ? "22px" : "15px"};border:1px solid #F3C4BE;border-radius:12px;background:#FCECEA;color:var(--red);font-weight:600">
+    <option value="">Gewinn zuordnen …</option>${t.prizes.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}</select>`;
+}
+
+document.addEventListener("click", async (e) => {
+  const rm = e.target.closest("[data-rm]");
+  if (rm) { e.stopPropagation(); const p = state.tombola.prizes.find(x => x.id === rm.dataset.rm); if (!confirm(`Gewinn „${p?.name}“ löschen?`)) return; await tApi({ action:"removePrize", id: rm.dataset.rm }).catch(()=>{}); return poll(); }
+  const arm = e.target.closest("[data-arm]");
+  if (arm && !editPrizes) {
+    const t = state.tombola; const id = arm.dataset.arm;
+    t.armed = t.armed === id ? null : id; renderTombola();
+    try { await tApi(t.armed ? { action:"arm", id } : { action:"disarm" }); } catch (err) { alert(err.message); }
+    return poll();
+  }
+  const ta = e.target.closest("[data-t]");
+  if (ta) { const a = ta.dataset.t; if (a === "disarm") state.tombola.armed = null; if (a === "dismiss") state.tombola.lastWinId = null; renderTombola(); await tApi({ action: a }).catch(()=>{}); return poll(); }
+  const dw = e.target.closest("[data-delwin]");
+  if (dw) { const w = state.tombola.wins.find(x => x.id === dw.dataset.delwin); if (!confirm(`Gewinner ${w?.name || w?.code} wirklich löschen?`)) return; await tApi({ action:"deleteWin", winId: dw.dataset.delwin }).catch(()=>{}); return poll(); }
+});
+document.addEventListener("change", async (e) => {
+  const c = e.target.closest("[data-contact]");
+  if (c) { await tApi({ action:"contacted", winId: c.dataset.contact, value: c.checked }).catch(()=>{}); return poll(); }
+  const a = e.target.closest("[data-assign]");
+  if (a && a.value) { await tApi({ action:"assign", winId: a.dataset.assign, prizeId: a.value }).catch(()=>{}); return poll(); }
+  const r = e.target.closest("[data-role]");
+  if (r) { await tApi({ action:"setRole", id: r.dataset.role, role: r.value }).catch(err => alert(err.message)); return poll(); }
+});
+$("editPrizes").onclick = () => { editPrizes = !editPrizes; renderTombola(); };
+$("addPrize").onsubmit = async (e) => {
+  e.preventDefault();
+  const name = $("prizeName").value.trim(); if (!name) return;
+  try { await tApi({ action:"addPrize", name, qty: $("prizeQty").value }); $("prizeName").value = ""; $("prizeQty").value = ""; } catch (err) { alert(err.message); }
+  poll();
+};
+$("exportBtn").onclick = () => {
+  const t = state.tombola; if (!t?.wins?.length) return alert("Noch keine Gewinner.");
+  const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const rows = [["Zeit","Gewinn","Name","E-Mail","Bestellnummer","Umschlag","Kontaktiert","Hinweis"]]
+    .concat([...t.wins].reverse().map(w => [new Date(w.t).toLocaleString("de-DE"), w.prizeName || "Gewinn fehlt", w.name, w.email, w.code, w.nr ?? "", w.contacted ? "ja" : "nein", [w.repeat ? "2. Gewinn" : "", w.test ? "Testscan" : "", w.note].filter(Boolean).join(", ")]));
+  const blob = new Blob(["﻿" + rows.map(r => r.map(q).join(";")).join("\r\n")], { type:"text/csv;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `Tombola-Gewinner_${new Date().toISOString().slice(0,10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+// ---------- Check-in-Listen ----------
+const ROLE_TXT = { umschlag:"Umschläge", tombola:"Tombola", ignorieren:"ignorieren", offen:"noch nicht zugeordnet" };
+function renderLists(){
+  if (!$("dlg").open) return;
+  const lists = state.lists || [];
+  if (document.activeElement?.dataset?.role) return; // Auswahl nicht während der Bedienung neu zeichnen
+  setHtml("listTable", lists.length ? `<table><tr><th>Liste</th><th>ID</th><th>gehört zu</th></tr>${lists.map(l => `
+    <tr class="listrow"><td>${esc(l.name || "(Name unbekannt)")}</td><td>${esc(l.id)}</td><td>
+      <select data-role="${esc(l.id)}">${["umschlag","tombola","ignorieren"].concat(l.role === "offen" ? ["offen"] : []).map(r => `<option value="${r}" ${l.role === r ? "selected" : ""}>${ROLE_TXT[r]}</option>`).join("")}</select>
+      ${l.role === "offen" ? `<span class="tag">bitte zuordnen</span>` : ""}
+    </td></tr>`).join("")}</table>` : `<p>Noch keine Listen bekannt. Sobald ein Ticket gescannt wurde, erscheint die Liste hier – oder „Listen aus pretix laden“.</p>`);
+}
+$("loadLists").onclick = async () => {
+  $("listMsg").textContent = "Lade …"; $("listMsg").className = "msg";
+  try { const r = await tApi({ action:"loadLists" }); $("listMsg").textContent = `${r.count} Listen geladen.`; $("listMsg").className = "msg ok"; }
+  catch (err) { $("listMsg").textContent = err.message; $("listMsg").className = "msg err"; }
+  poll();
+};
+$("addListBtn").onclick = async () => {
+  const id = $("listId").value.trim(); if (!id) return;
+  try { await tApi({ action:"setRole", id, role:"tombola" }); $("listMsg").textContent = `Liste ${id} ist jetzt die Tombola-Liste.`; $("listMsg").className = "msg ok"; $("listId").value = ""; }
+  catch (err) { $("listMsg").textContent = err.message; $("listMsg").className = "msg err"; }
+  poll();
+};
+$("tTestBtn").onclick = async () => {
+  const code = $("tTestCode").value.trim(); if (!code) return;
+  try { const r = await tApi({ action:"test", code }); $("tTestMsg").textContent = r.found ? "Tombola-Testscan ausgelöst." : "Ausgelöst – Bestellnummer steht aber nicht in der Nummernliste."; $("tTestMsg").className = r.found ? "msg ok" : "msg err"; }
+  catch (err) { $("tTestMsg").textContent = err.message; $("tTestMsg").className = "msg err"; }
+  poll();
+};
+$("tResetBtn").onclick = async () => {
+  if (!confirm("Alle Gewinner löschen? Vorher als CSV exportieren!")) return;
+  await tApi({ action:"reset" }).catch(()=>{}); poll();
+};
+
 // ---------- Abfrage alle 1,5 s ----------
 let busy = false;
 async function poll(){
@@ -276,9 +521,12 @@ async function poll(){
     state = data; lastOk = Date.now();
     const openCodes = new Set(Object.values(state.orders).filter(o => o.status === "offen").map(o => o.code));
     const fresh = seen ? [...openCodes].filter(c => !seen.has(c)) : [];
-    render();
-    if (fresh.length) { beep(); const h = $("hero"); h.classList.remove("flash"); void h.offsetWidth; h.classList.add("flash"); }
+    render(); renderTombola(); renderLists();
+    if (fresh.length) { beep(); flash("hero"); }
     seen = openCodes;
+    const lw = state.tombola?.lastWinId || null;
+    if (lastWinSeen !== undefined && lw && lw !== lastWinSeen) { beep(); flash("tHero"); }
+    lastWinSeen = lw;
   } catch (e) {} finally { busy = false; tick(); }
 }
 function tick(){
@@ -287,10 +535,11 @@ function tick(){
   $("dot").classList.toggle("off", !ok);
   $("statusText").textContent = ok ? "Live" : age === null ? "verbinde …" : `keine Verbindung seit ${age} s`;
 }
+showTab(tab);
 setInterval(poll, 1500); setInterval(tick, 1000); poll();
 
 // ---------- Einstellungen ----------
-$("settingsBtn").onclick = () => $("dlg").showModal();
+$("settingsBtn").onclick = () => { $("dlg").showModal(); renderLists(); };
 $("closeDlg").onclick = () => $("dlg").close();
 
 let sheet = null; // { header:[], rows:[[]] }

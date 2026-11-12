@@ -1,13 +1,21 @@
 // Stand für das Tablet + Aktionen (ausgegeben, rückgängig, Testscan, zurücksetzen)
 import { readJSON, update, applyScan, EMPTY_STATE, json, checkPin } from "../lib/store.mjs";
+import { EMPTY_TOMBOLA } from "../lib/tombola.mjs";
+import { EMPTY_CONFIG } from "../lib/pretix.mjs";
 
 export default async (req) => {
   if (!checkPin(req)) return json({ error: "pin" }, 401);
 
   if (req.method === "GET") {
-    const { data } = await readJSON("state", EMPTY_STATE);
-    const { data: mapping } = await readJSON("mapping", { rows: {} });
-    return json({ ...data, mappingCount: Object.keys(mapping.rows || {}).length, mappingAt: mapping.updatedAt || null, now: new Date().toISOString() });
+    const [{ data }, { data: mapping }, { data: tombola }, { data: cfg }] = await Promise.all([
+      readJSON("state", EMPTY_STATE), readJSON("mapping", { rows: {} }),
+      readJSON("tombola", EMPTY_TOMBOLA), readJSON("config", EMPTY_CONFIG),
+    ]);
+    const { seen, ...t } = { ...EMPTY_TOMBOLA, ...tombola };
+    return json({
+      ...data, tombola: t, lists: Object.values(cfg.lists || {}),
+      mappingCount: Object.keys(mapping.rows || {}).length, mappingAt: mapping.updatedAt || null, now: new Date().toISOString(),
+    });
   }
 
   const { action, code: rawCode } = await req.json().catch(() => ({}));
